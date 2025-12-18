@@ -14,7 +14,7 @@ import xyz.ncookie.stargazer.service.StargazingService;
 @RestController
 @RequestMapping("/api/v1/analyze")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // 프론트엔드(React)에서 호출 허용
+@CrossOrigin(origins = "*")
 public class StargazingController {
 
 	private final StargazingService stargazingService;
