@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public record OpenWeatherResponse(
 	Main main,
 	Clouds clouds,
-	int visibility, // 가시거리 (미터)
+	Integer visibility, // 가시거리 (미터)
 	List<Weather> weather
 ) {
 	@JsonIgnoreProperties(ignoreUnknown = true)
