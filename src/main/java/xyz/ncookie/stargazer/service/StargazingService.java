@@ -64,24 +64,28 @@ public class StargazingService {
 		// 1. 파싱
 		ZonedDateTime targetDateTime = ZonedDateTime.of(
 			LocalDate.parse(request.date()),
-			// LocalDate.parse("2025-12-04"),
 			LocalTime.parse(request.time()),
 			ZoneId.of("Asia/Seoul")
 		);
+		// ZonedDateTime targetDateTime = ZonedDateTime.of(
+		// 	LocalDate.parse("2025-12-20"),
+		// 	LocalTime.parse("21:00"),
+		// 	ZoneId.of("Asia/Seoul")
+		// );
 
 		// 2. 외부 데이터 수집
 		OpenWeatherResponse weatherData = fetchWeatherData(request.lat(), request.lon());
-		RawAstronomyData rawAstro = calculateRawAstronomy(request.lat(), request.lon(), targetDateTime);
 
-		// 3. [1차 점수] 기상 및 천문 조건만 고려한 점수 (광해 미반영 상태)
-		int weatherScore = calculateWeatherScore(weatherData, rawAstro);
+		StarAnalysisResult result = analyzeStargazingConditions(request.lat(), request.lon(), targetDateTime, weatherData);
 
-		// 4. [2차 보정] AI에게 위치 기반 광해 페널티 적용 요청 (최종 점수 도출)
-		GeminiAnalysisResult aiResult = getGeminiAnalysis(weatherScore, request.lat(), request.lon(), weatherData, rawAstro);
+		GeminiAnalysisResult aiResult = getGeminiAnalysis(
+			result.finalScore(), // 공통 로직에서 계산된 점수
+			request.lat(), request.lon(),
+			weatherData, result.astro(), result.bortleClass()
+		);
 
-		// 5. 응답 생성 (점수는 AI가 보정한 finalScore 사용)
 		return new StargazingResponse(
-			aiResult.finalScore(), // 👈 AI가 수정한 점수 반영!
+			aiResult.finalScore(),
 			aiResult.comment(),
 			new StargazingResponse.WeatherInfo(
 				weatherData.clouds().all(),
@@ -89,20 +93,20 @@ public class StargazingService {
 				getVisibilityText(weatherData.visibility())
 			),
 			new StargazingResponse.AstronomyInfo(
-				getMoonPhaseName(rawAstro.moonPhaseDegree()),
-				rawAstro.moonRiseTime(),
-				rawAstro.sunsetTime()
+				getMoonPhaseName(result.astro().moonPhaseDegree()),
+				result.astro().moonRiseTime(),
+				result.astro().sunsetTime()
 			),
 			new StargazingResponse.LightPollutionInfo(
-				aiResult.bortleClass(),
-				aiResult.brightness(),
-				aiResult.limitingMag()
+				"Class " + result.bortleClass(),
+				getBrightnessText(result.bortleClass()),
+				getLimitingMagText(result.bortleClass())
 			)
 		);
 	}
 
 	public StargazingForecastResponse getForecast(double lat, double lon) {
-		// 1. Forecast API 호출 (5일치 / 3시간 간격)
+		// Forecast API 호출 (5일치 / 3시간 간격)
 		String url = String.format(
 			"https://api.openweathermap.org/data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=metric",
 			lat, lon, weatherApiKey
@@ -120,43 +124,36 @@ public class StargazingService {
 			return new StargazingForecastResponse(List.of());
 		}
 
-		// 2. 데이터 가공 (밤 시간대 필터링 및 그룹화)
+		// 데이터 가공 (밤 시간대 필터링 및 그룹화)
 		Map<String, List<StargazingForecastResponse.HourlyForecast>> groupedData = new LinkedHashMap<>();
 
 		for (OpenWeatherForecastResponse.Item item : rawData.list()) {
-			// 시간 파싱
 			ZonedDateTime itemTime = ZonedDateTime.ofInstant(
-				java.time.Instant.ofEpochSecond(item.dt()),
-				ZoneId.of("Asia/Seoul")
+				java.time.Instant.ofEpochSecond(item.dt()), ZoneId.of("Asia/Seoul")
 			);
 
-			// 천문 데이터 계산 (SunCalc)
-			RawAstronomyData astro = calculateRawAstronomy(lat, lon, itemTime);
-
-			// ☀️ 필터링: 해가 떠있으면(시민박명 포함) 관측 불가하므로 스킵
-			// 천문박명(Astronimical Twilight) 기준: 태양 고도 -12도 미만이어야 별이 잘 보임
-			// 하지만 조금 관대하게 -6도(시민박명 끝)부터 보여주기로 함 (야경 포함)
+			// 태양 고도 체크 (이건 반복문 최적화를 위해 여기서 먼저 체크)
 			SunPosition sunPos = SunPosition.compute().at(lat, lon).on(itemTime).execute();
-			if (sunPos.getAltitude() > -6.0) {
-				continue;
-			}
+			if (sunPos.getAltitude() > -6.0) continue; // 낮이면 스킵
 
-			// 점수 계산 (기존 메서드 재활용!)
-			// 단, Forecast API 구조에 맞춰 변환 필요
-			OpenWeatherResponse.Main main = new OpenWeatherResponse.Main(item.main().temp(), item.main().humidity());
-			OpenWeatherResponse.Clouds clouds = new OpenWeatherResponse.Clouds(item.clouds().all());
-			// API마다 필드명이 달라서 임시 객체 생성 (점수 계산기 호환용)
-			OpenWeatherResponse tempWeather = new OpenWeatherResponse(main, clouds, item.visibility(), null);
+			// 예보 데이터를 공통 포맷(OpenWeatherResponse)으로 변환
+			OpenWeatherResponse tempWeather = new OpenWeatherResponse(
+				new OpenWeatherResponse.Main(item.main().temp(), item.main().humidity()),
+				new OpenWeatherResponse.Clouds(item.clouds().all()),
+				(item.visibility() != null) ? item.visibility() : 10000,
+				null
+			);
 
-			int score = calculateWeatherScore(tempWeather, astro);
+			// 공통 분석 메서드 호출! (getAnalyze와 똑같은 로직 적용됨)
+			StarAnalysisResult result = analyzeStargazingConditions(lat, lon, itemTime, tempWeather);
 
 			// DTO 생성
 			StargazingForecastResponse.HourlyForecast hourlyDto = new StargazingForecastResponse.HourlyForecast(
 				itemTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-				score,
-				String.format("%.1f등급", 6.0 - (item.clouds().all() / 20.0)), // 간단한 등급 추산 로직
+				result.finalScore(), // 일관성 있는 점수!
+				String.format("%.1f등급", 6.0 - (item.clouds().all() / 20.0)),
 				item.clouds().all(),
-				getMoonPhaseName(astro.moonPhaseDegree())
+				getMoonPhaseName(result.astro().moonPhaseDegree())
 			);
 
 			// 날짜별 그룹화
@@ -164,7 +161,7 @@ public class StargazingService {
 			groupedData.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(hourlyDto);
 		}
 
-		// 3. 최종 응답 변환 (Map -> List)
+		// 최종 응답 변환 (Map -> List)
 		List<StargazingForecastResponse.DailyForecast> dailyList = groupedData.entrySet().stream()
 			.map(entry -> new StargazingForecastResponse.DailyForecast(entry.getKey(), entry.getValue()))
 			.toList();
@@ -175,6 +172,34 @@ public class StargazingService {
 	// =========================================================================
 	//  Private Helper Methods
 	// =========================================================================
+
+	private record StarAnalysisResult(
+		int finalScore,          // 최종 점수 (광해 반영됨)
+		int weatherScore,        // 순수 기상 점수
+		int bortleClass,         // 광해 등급
+		RawAstronomyData astro   // 천문 데이터 (달, 일몰 등)
+	) {}
+
+	private StarAnalysisResult analyzeStargazingConditions(double lat, double lon, ZonedDateTime dateTime, OpenWeatherResponse weather) {
+
+		// 1. 천문 데이터 계산 (SunCalc)
+		RawAstronomyData astro = calculateRawAstronomy(lat, lon, dateTime);
+
+		// 2. 광해 등급 조회 (CSV 데이터)
+		int realBortle = lightPollutionService.getBortleClass(lat, lon);
+
+		// 3. 기상 점수 계산 (구름, 시정, 달)
+		int weatherScore = calculateWeatherScore(weather, astro);
+
+		// 4. 광해 페널티 적용
+		int penalty = calculateLightPollutionPenalty(realBortle);
+
+		// 5. 최종 점수 산출
+		int finalScore = Math.max(0, weatherScore - penalty);
+
+		return new StarAnalysisResult(finalScore, weatherScore, realBortle, astro);
+	}
+
 
 	// 1. 날씨 데이터 가져오기
 	private OpenWeatherResponse fetchWeatherData(double lat, double lon) {
@@ -267,22 +292,16 @@ public class StargazingService {
 	// 4. Gemini AI 분석 요청 (JSON 파싱 포함)
 	private record GeminiAnalysisResult(int finalScore, String comment, String bortleClass, String brightness, String limitingMag) {}
 
-	private GeminiAnalysisResult getGeminiAnalysis(int weatherScore, double lat, double lon, OpenWeatherResponse w, RawAstronomyData a) {
-		// 1. 광해 등급 조회 (CSV 기반 정밀 데이터)
-		int realBortle = lightPollutionService.getBortleClass(lat, lon);
+	private GeminiAnalysisResult getGeminiAnalysis(
+		int finalScore,
+		double lat,
+		double lon,
+		OpenWeatherResponse w,
+		RawAstronomyData a,
+		int bortleClass
+	) {
 
-		// 2. 주소 조회
 		String addressName = getAddressName(lat, lon);
-
-		// 3. [핵심] 자바에서 최종 점수 계산 (AI에게 맡기지 않음)
-		// Bortle 4 이하는 감점 없음, 5부터 등급당 10~15점씩 감점 (조절 가능)
-		int lightPollutionPenalty = 0;
-		if (realBortle >= 8) lightPollutionPenalty = 50;      // 서울 도심
-		else if (realBortle >= 6) lightPollutionPenalty = 25; // 수도권/신도시
-		else if (realBortle == 5) lightPollutionPenalty = 10; // 교외
-
-		// 최종 점수 = 기상 점수 - 광해 페널티
-		int finalCalculatedScore = Math.max(0, weatherScore - lightPollutionPenalty);
 
 		String prompt = String.format("""
 			너는 천체 관측 예보 전문가야. 아래 제공된 **확정 데이터(Fact)**를 바탕으로 사용자에게 관측 조언을 해줘.
@@ -317,27 +336,27 @@ public class StargazingService {
 			}
 			""",
 			addressName,            // 주소
-			realBortle,             // 광해 등급 (CSV 값)
-			finalCalculatedScore,   // 자바에서 계산한 최종 점수
+			bortleClass,             // 광해 등급 (CSV 값)
+			finalScore,
 			w.clouds().all(),       // 구름
 			getVisibilityText(w.visibility()), // 시정 텍스트
 			getMoonPhaseName(a.moonPhaseDegree()), // 달 이름
 			a.moonFraction(),       // 달 밝기
-			finalCalculatedScore,   // JSON에 넣을 점수 (위와 동일)
-			realBortle              // JSON에 넣을 Bortle (위와 동일)
+			finalScore,   // JSON에 넣을 점수 (위와 동일)
+			bortleClass              // JSON에 넣을 Bortle (위와 동일)
 		);
 
 		String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + geminiKey;
 
 		try {
 			GeminiResponse response = restTemplate.postForObject(url, GeminiRequest.of(prompt), GeminiResponse.class);
-			if (response == null) return new GeminiAnalysisResult(weatherScore, "분석 불가", "-", "-", "-");
+			if (response == null) return new GeminiAnalysisResult(finalScore, "분석 불가", "-", "-", "-");
 
 			String jsonText = response.getText().replace("```json", "").replace("```", "").trim();
 			JsonNode root = objectMapper.readTree(jsonText);
 
 			return new GeminiAnalysisResult(
-				root.path("final_score").asInt(weatherScore), // AI가 계산한 최종 점수 사용
+				root.path("final_score").asInt(finalScore), // AI가 계산한 최종 점수 사용
 				root.path("comment").asString("밤하늘을 올려다보세요."),
 				root.path("bortle").asString("알 수 없음"),
 				root.path("brightness").asString("보통"),
@@ -347,7 +366,7 @@ public class StargazingService {
 		} catch (Exception e) {
 			log.error("Gemini Error", e);
 			// 에러 시 기상 점수 그대로 반환
-			return new GeminiAnalysisResult(weatherScore, "AI 연결 지연", "Class ?", "알 수 없음", "?등급");
+			return new GeminiAnalysisResult(finalScore, "AI 연결 지연", "Class ?", "알 수 없음", "?등급");
 		}
 	}
 
@@ -412,5 +431,31 @@ public class StargazingService {
 			log.error("주소 변환 실패", e);
 		}
 		return "Unknown Location";
+	}
+
+	// 광해 페널티 계산 공통 로직
+	private int calculateLightPollutionPenalty(int bortleClass) {
+		if (bortleClass >= 8) return 50;      // 서울 도심 (최악)
+		if (bortleClass >= 7) return 40;
+		if (bortleClass >= 6) return 25;      // 수도권/신도시
+		if (bortleClass == 5) return 10;      // 교외
+		return 0;                             // 시골 (감점 없음)
+	}
+
+	// Bortle 등급에 따른 텍스트 헬퍼 (AI 의존도 낮추기 위해)
+	private String getBrightnessText(int bortle) {
+		if (bortle <= 2) return "매우 어두움";
+		if (bortle <= 4) return "어두움";
+		if (bortle <= 6) return "보통";
+		return "매우 밝음";
+	}
+
+	private String getLimitingMagText(int bortle) {
+		// 대략적인 한계등급 추정
+		if (bortle <= 2) return "6.5등급";
+		if (bortle <= 4) return "6.0등급";
+		if (bortle <= 5) return "5.5등급";
+		if (bortle <= 7) return "4.5등급";
+		return "3.0등급";
 	}
 }
