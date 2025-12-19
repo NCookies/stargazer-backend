@@ -19,6 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
@@ -50,6 +52,8 @@ public class StargazingService {
 	private static final int VISIBILITY_GOOD = 10000;
 	private static final int VISIBILITY_BAD = 5000;
 	private static final double MOON_FRACTION_THRESHOLD = 0.3;
+
+	private final LightPollutionService lightPollutionService;
 
 	/**
 	 * 메인 분석 로직
@@ -264,29 +268,64 @@ public class StargazingService {
 	private record GeminiAnalysisResult(int finalScore, String comment, String bortleClass, String brightness, String limitingMag) {}
 
 	private GeminiAnalysisResult getGeminiAnalysis(int weatherScore, double lat, double lon, OpenWeatherResponse w, RawAstronomyData a) {
-		// 프롬프트 강화: 광해 페널티 로직 명시
+		// 1. 광해 등급 조회 (CSV 기반 정밀 데이터)
+		int realBortle = lightPollutionService.getBortleClass(lat, lon);
+
+		// 2. 주소 조회
+		String addressName = getAddressName(lat, lon);
+
+		// 3. [핵심] 자바에서 최종 점수 계산 (AI에게 맡기지 않음)
+		// Bortle 4 이하는 감점 없음, 5부터 등급당 10~15점씩 감점 (조절 가능)
+		int lightPollutionPenalty = 0;
+		if (realBortle >= 8) lightPollutionPenalty = 50;      // 서울 도심
+		else if (realBortle >= 6) lightPollutionPenalty = 25; // 수도권/신도시
+		else if (realBortle == 5) lightPollutionPenalty = 10; // 교외
+
+		// 최종 점수 = 기상 점수 - 광해 페널티
+		int finalCalculatedScore = Math.max(0, weatherScore - lightPollutionPenalty);
+
 		String prompt = String.format("""
-            너는 천체 관측 전문가야. 다음 위치의 관측 조건을 분석해줘.
-            
-            [입력 데이터]
-            - 위치: 위도 %.4f, 경도 %.4f
-            - 기상/천문 기반 잠정 점수: %d점 (100점 만점)
-            - 날씨: 구름 %d%%, 시정 %s
-            - 달: %s (위상 %.2f)
-            
-            [지시사항]
-            1. 위도/경도를 보고 해당 지역의 광해(Light Pollution) 수준(Bortle Scale)을 추정해.
-            2. 도심지이거나 광해가 심하다면, 입력된 '잠정 점수'에서 과감하게 점수를 깎아 '최종 점수(final_score)'를 계산해. (서울 도심이면 30~50점 이상 감점 가능)
-            3. 결과를 아래 JSON 포맷으로만 응답해.
-            
-            {
-              "final_score": 45,
-              "comment": "서울 도심이라 밝아서 별이 잘 안 보여요. 하지만 달은 선명하네요.",
-              "bortle": "Class 8 (도심)",
-              "brightness": "매우 밝음",
-              "limiting_mag": "3.0등급"
-            }
-            """, lat, lon, weatherScore, w.clouds().all(), getVisibilityText(w.visibility()), getMoonPhaseName(a.moonPhaseDegree()), a.moonFraction);
+			너는 천체 관측 예보 전문가야. 아래 제공된 **확정 데이터(Fact)**를 바탕으로 사용자에게 관측 조언을 해줘.
+		
+			[관측지 정보]
+			- 주소: %s
+			- **광해 등급: Bortle Class %d** (정밀 지도 데이터 기반, 1~9등급)
+			- 특징:
+			  * Class 1~4: 별이 쏟아지는 시골/산간 지역 (관측 최적)
+			  * Class 5~6: 교외 지역, 밝은 별 위주 관측 가능
+			  * Class 7~9: 도심지, 행성/달 위주 관측 가능 (광해 심함)
+		
+			[기상 및 천문 데이터]
+			- **최종 관측 점수: %d점** (기상과 광해 페널티가 이미 반영된 최종값)
+			- 하늘 상태: 구름 %d%%, 시정 %s
+			- 달 상태: %s (밝기 %.2f)
+		
+			[지시사항]
+			1. **점수 계산 금지**: 입력된 '최종 관측 점수'를 그대로 사용해. 절대 네가 다시 계산하지 마.
+			2. **코멘트 작성**:
+			   - 점수가 높으면(70점 이상): "별이 아주 잘 보입니다", "은하수 관측 도전!" 등의 긍정적 멘트.
+			   - 점수가 낮으면(40점 미만): 원인을 콕 집어 말해줘. (예: "서울 도심이라 너무 밝네요", "구름이 많아서 아쉽네요")
+			   - 광해 등급(Bortle)에 맞춰 현실적인 조언을 해줘. (예: Class 8이면 "별보다는 달이나 목성을 보세요"라고 추천)
+			3. 아래 JSON 포맷으로 응답해.
+		
+			{
+			  "final_score": %d,
+			  "comment": "한 줄 평 (자연스럽고 친절하게)",
+			  "bortle": "Class %d",
+			  "brightness": "광해 등급에 따른 밝기 멘트 (예: 매우 어두움/보통/매우 밝음)",
+			  "limiting_mag": "광해 등급에 따른 한계등급 추정치 (예: 6.0등급 / 4.5등급 / 3.0등급)"
+			}
+			""",
+			addressName,            // 주소
+			realBortle,             // 광해 등급 (CSV 값)
+			finalCalculatedScore,   // 자바에서 계산한 최종 점수
+			w.clouds().all(),       // 구름
+			getVisibilityText(w.visibility()), // 시정 텍스트
+			getMoonPhaseName(a.moonPhaseDegree()), // 달 이름
+			a.moonFraction(),       // 달 밝기
+			finalCalculatedScore,   // JSON에 넣을 점수 (위와 동일)
+			realBortle              // JSON에 넣을 Bortle (위와 동일)
+		);
 
 		String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + geminiKey;
 
@@ -299,10 +338,10 @@ public class StargazingService {
 
 			return new GeminiAnalysisResult(
 				root.path("final_score").asInt(weatherScore), // AI가 계산한 최종 점수 사용
-				root.path("comment").asText("밤하늘을 올려다보세요."),
-				root.path("bortle").asText("알 수 없음"),
-				root.path("brightness").asText("보통"),
-				root.path("limiting_mag").asText("4.0등급")
+				root.path("comment").asString("밤하늘을 올려다보세요."),
+				root.path("bortle").asString("알 수 없음"),
+				root.path("brightness").asString("보통"),
+				root.path("limiting_mag").asString("4.0등급")
 			);
 
 		} catch (Exception e) {
@@ -347,5 +386,31 @@ public class StargazingService {
 		if (phase > -80) return "WAXING_GIBBOUS";                 // 상현망간의 달 (상현→보름)
 		if (phase > -100) return "FIRST_QUARTER";                 // 상현달 (-90도 근처)
 		return "WAXING_CRESCENT";                                 // 초승달 (삭→상현)
+	}
+
+	private String getAddressName(double lat, double lon) {
+		// OpenWeatherMap Reverse Geocoding API (무료)
+		String url = String.format(
+			"http://api.openweathermap.org/geo/1.0/reverse?lat=%f&lon=%f&limit=1&appid=%s",
+			lat, lon, weatherApiKey
+		);
+
+		try {
+			// 응답용 임시 Record (내부 클래스로 정의)
+			@JsonIgnoreProperties(ignoreUnknown = true)
+			record GeoResult(String name, String country, String state) {} // state가 'Gyeonggi-do' 같은 정보
+
+			GeoResult[] results = restTemplate.getForObject(url, GeoResult[].class);
+			if (results != null && results.length > 0) {
+				GeoResult r = results[0];
+				// 예: "Yangpyeong-gun, KR" 형태로 반환
+				return (r.name() != null ? r.name() : "") +
+					(r.state() != null ? ", " + r.state() : "") +
+					", " + r.country();
+			}
+		} catch (Exception e) {
+			log.error("주소 변환 실패", e);
+		}
+		return "Unknown Location";
 	}
 }
