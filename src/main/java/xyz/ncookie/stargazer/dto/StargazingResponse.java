@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record StargazingResponse(
+	String date,			// "2025-12-19"
+	String time,			// "22:00"
+
 	int totalScore,          // 종합 점수
 	String aiComment,        // AI 한줄 평
 

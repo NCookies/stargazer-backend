@@ -85,6 +85,8 @@ public class StargazingService {
 		);
 
 		return new StargazingResponse(
+			targetDateTime.toLocalDate().toString(),
+			targetDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
 			aiResult.finalScore(),
 			aiResult.comment(),
 			new StargazingResponse.WeatherInfo(
