@@ -180,22 +180,32 @@ public class StargazingService {
 		RawAstronomyData astro   // 천문 데이터 (달, 일몰 등)
 	) {}
 
+	/*
+	 * 핵심 공통 메서드
+	 */
 	private StarAnalysisResult analyzeStargazingConditions(double lat, double lon, ZonedDateTime dateTime, OpenWeatherResponse weather) {
 
-		// 1. 천문 데이터 계산 (SunCalc)
+		// [안전장치] 낮인지 밤인지 체크 (태양 고도)
+		SunPosition sunPos = SunPosition.compute().at(lat, lon).on(dateTime).execute();
+		boolean isDaytime = sunPos.getAltitude() > -6.0; // 시민박명(-6도) 이상이면 '낮'으로 간주
+
+		// 천문 데이터 계산 (SunCalc)
 		RawAstronomyData astro = calculateRawAstronomy(lat, lon, dateTime);
 
-		// 2. 광해 등급 조회 (CSV 데이터)
+		// 광해 등급 조회 (CSV 데이터)
 		int realBortle = lightPollutionService.getBortleClass(lat, lon);
 
-		// 3. 기상 점수 계산 (구름, 시정, 달)
-		int weatherScore = calculateWeatherScore(weather, astro);
+		int finalScore;
+		int weatherScore;
 
-		// 4. 광해 페널티 적용
-		int penalty = calculateLightPollutionPenalty(realBortle);
-
-		// 5. 최종 점수 산출
-		int finalScore = Math.max(0, weatherScore - penalty);
+		if (isDaytime) {
+			weatherScore = 0;
+			finalScore = 0;
+		} else {
+			weatherScore = calculateWeatherScore(weather, astro);
+			int penalty = calculateLightPollutionPenalty(realBortle);
+			finalScore = Math.max(0, weatherScore - penalty);
+		}
 
 		return new StarAnalysisResult(finalScore, weatherScore, realBortle, astro);
 	}
