@@ -56,7 +56,7 @@ public class StargazingService {
 	private final LightPollutionService lightPollutionService;
 
 	/**
-	 * 메인 분석 로직
+	 * 특정 시점(현재 또는 미래)의 관측 적합도 상세 분석
 	 */
 	public StargazingResponse getAnalyze(StargazingRequest request) {
 		log.info("Analyzing stargazing request {}", request);
@@ -74,14 +74,17 @@ public class StargazingService {
 		// );
 
 		// 2. 외부 데이터 수집
-		OpenWeatherResponse weatherData = fetchWeatherData(request.lat(), request.lon());
+		OpenWeatherResponse weatherData = fetchWeatherData(request.lat(), request.lon(), targetDateTime);
 
 		StarAnalysisResult result = analyzeStargazingConditions(request.lat(), request.lon(), targetDateTime, weatherData);
 
 		GeminiAnalysisResult aiResult = getGeminiAnalysis(
-			result.finalScore(), // 공통 로직에서 계산된 점수
-			request.lat(), request.lon(),
-			weatherData, result.astro(), result.bortleClass()
+			result.finalScore(),
+			request.lat(),
+			request.lon(),
+			weatherData,
+			result.astro(),
+			result.bortleClass()
 		);
 
 		return new StargazingResponse(
@@ -107,20 +110,12 @@ public class StargazingService {
 		);
 	}
 
+	/**
+	 * 주간 예보 조회 (5일 / 3시간 간격)
+	 */
 	public StargazingForecastResponse getForecast(double lat, double lon) {
-		// Forecast API 호출 (5일치 / 3시간 간격)
-		String url = String.format(
-			"https://api.openweathermap.org/data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=metric",
-			lat, lon, weatherApiKey
-		);
 
-		OpenWeatherForecastResponse rawData;
-		try {
-			rawData = restTemplate.getForObject(url, OpenWeatherForecastResponse.class);
-		} catch (Exception e) {
-			log.error("예보 API 호출 실패", e);
-			return new StargazingForecastResponse(List.of()); // 빈 리스트 반환
-		}
+		OpenWeatherForecastResponse rawData = fetchRawForecast(lat, lon);
 
 		if (rawData == null || rawData.list() == null) {
 			return new StargazingForecastResponse(List.of());
@@ -139,12 +134,7 @@ public class StargazingService {
 			if (sunPos.getAltitude() > -6.0) continue; // 낮이면 스킵
 
 			// 예보 데이터를 공통 포맷(OpenWeatherResponse)으로 변환
-			OpenWeatherResponse tempWeather = new OpenWeatherResponse(
-				new OpenWeatherResponse.Main(item.main().temp(), item.main().humidity()),
-				new OpenWeatherResponse.Clouds(item.clouds().all()),
-				(item.visibility() != null) ? item.visibility() : 10000,
-				null
-			);
+			OpenWeatherResponse tempWeather = convertForecastItemToWeather(item);
 
 			// 공통 분석 메서드 호출! (getAnalyze와 똑같은 로직 적용됨)
 			StarAnalysisResult result = analyzeStargazingConditions(lat, lon, itemTime, tempWeather);
@@ -213,25 +203,82 @@ public class StargazingService {
 	}
 
 
-	// 1. 날씨 데이터 가져오기
-	private OpenWeatherResponse fetchWeatherData(double lat, double lon) {
+	/**
+	 * ✅ [공통 추출] OpenWeatherMap Forecast API 원본 데이터 호출
+	 * - getForecast와 getAnalyze(미래 조회 시)에서 공통으로 사용
+	 */
+	private OpenWeatherForecastResponse fetchRawForecast(double lat, double lon) {
+		String url = String.format(
+			"https://api.openweathermap.org/data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=metric",
+			lat, lon, weatherApiKey
+		);
+		try {
+			return restTemplate.getForObject(url, OpenWeatherForecastResponse.class);
+		} catch (Exception e) {
+			log.error("Forecast API 호출 실패", e);
+			return null;
+		}
+	}
+
+	/**
+	 * 날씨 데이터 확보 전략
+	 * - TargetTime이 현재와 가까우면: Current Weather API (/weather)
+	 * - TargetTime이 미래면: Forecast API (/forecast) 호출 후 가장 가까운 시간대 추출
+	 */
+	private OpenWeatherResponse fetchWeatherData(double lat, double lon, ZonedDateTime targetDateTime) {
+		ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+
+		// "지금"과 차이가 1시간 이내라면 -> 실시간 날씨 (/weather) 사용
+		if (Math.abs(java.time.Duration.between(now, targetDateTime).toMinutes()) < 60) {
+			return fetchCurrentWeather(lat, lon);
+		}
+
+		// 미래의 특정 시간이라면 -> 예보 데이터 (/forecast) 사용
+		return fetchFutureWeather(lat, lon, targetDateTime);
+	}
+
+	private OpenWeatherResponse fetchCurrentWeather(double lat, double lon) {
 		String url = String.format(
 			"https://api.openweathermap.org/data/2.5/weather?lat=%f&lon=%f&appid=%s&units=metric",
 			lat, lon, weatherApiKey
 		);
-
 		try {
 			return restTemplate.getForObject(url, OpenWeatherResponse.class);
 		} catch (Exception e) {
-			log.error("날씨 API 호출 실패: {}", e.getMessage());
-			// Fail-safe: 더미 데이터 반환
-			return new OpenWeatherResponse(
-				new OpenWeatherResponse.Main(0.0, 50.0),
-				new OpenWeatherResponse.Clouds(100),
-				3000,
-				null
-			);
+			log.error("실시간 날씨 API 실패", e);
+			return createDummyWeather();
 		}
+	}
+
+	private OpenWeatherResponse fetchFutureWeather(double lat, double lon, ZonedDateTime targetTime) {
+		// 1. [공통 메서드 호출] Forecast API 데이터 가져오기
+		OpenWeatherForecastResponse forecast = fetchRawForecast(lat, lon);
+
+		if (forecast == null || forecast.list() == null) {
+			return createDummyWeather();
+		}
+
+		// 2. 가장 가까운 시간대의 데이터 찾기 (Nearest Neighbor Search)
+		OpenWeatherForecastResponse.Item bestMatch = null;
+		long minDiff = Long.MAX_VALUE;
+
+		for (OpenWeatherForecastResponse.Item item : forecast.list()) {
+			ZonedDateTime itemTime = ZonedDateTime.ofInstant(
+				java.time.Instant.ofEpochSecond(item.dt()), ZoneId.of("Asia/Seoul")
+			);
+
+			long diff = Math.abs(java.time.Duration.between(itemTime, targetTime).toMinutes());
+			if (diff < minDiff) {
+				minDiff = diff;
+				bestMatch = item;
+			}
+		}
+
+		if (bestMatch != null) {
+			return convertForecastItemToWeather(bestMatch);
+		}
+
+		return createDummyWeather();
 	}
 
 	// 내부 계산용 데이터 묶음 (Record)
@@ -469,5 +516,23 @@ public class StargazingService {
 		if (bortle <= 5) return "5.5등급";
 		if (bortle <= 7) return "4.5등급";
 		return "3.0등급";
+	}
+
+	private OpenWeatherResponse convertForecastItemToWeather(OpenWeatherForecastResponse.Item item) {
+		return new OpenWeatherResponse(
+			new OpenWeatherResponse.Main(item.main().temp(), item.main().humidity()),
+			new OpenWeatherResponse.Clouds(item.clouds().all()),
+			(item.visibility() != null) ? item.visibility() : 10000,
+			null
+		);
+	}
+
+	// 더미 데이터 생성 (에러 시 Fallback)
+	private OpenWeatherResponse createDummyWeather() {
+		return new OpenWeatherResponse(
+			new OpenWeatherResponse.Main(0.0, 50.0),
+			new OpenWeatherResponse.Clouds(100), // 구름 100% (관측 불가 처리)
+			10000, null
+		);
 	}
 }
