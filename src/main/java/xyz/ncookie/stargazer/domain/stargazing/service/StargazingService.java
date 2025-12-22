@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.service;
+package xyz.ncookie.stargazer.domain.stargazing.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,13 +25,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import xyz.ncookie.stargazer.dto.GeminiRequest;
-import xyz.ncookie.stargazer.dto.GeminiResponse;
-import xyz.ncookie.stargazer.dto.OpenWeatherForecastResponse;
-import xyz.ncookie.stargazer.dto.OpenWeatherResponse;
-import xyz.ncookie.stargazer.dto.StargazingForecastResponse;
-import xyz.ncookie.stargazer.dto.StargazingRequest;
-import xyz.ncookie.stargazer.dto.StargazingResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.GeminiRequest;
+import xyz.ncookie.stargazer.domain.stargazing.dto.GeminiResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.OpenWeatherForecastResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.OpenWeatherResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingForecastResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingRequest;
+import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingResponse;
 
 @Service
 @Slf4j

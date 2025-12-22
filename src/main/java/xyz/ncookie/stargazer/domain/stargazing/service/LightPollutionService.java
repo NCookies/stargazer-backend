@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.service;
+package xyz.ncookie.stargazer.domain.stargazing.service;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
