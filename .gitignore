@@ -1,3 +1,7 @@
+### Custom ###
+.env
+/src/main/resources/light_pollution_korea.csv
+
 HELP.md
 .gradle
 build/
