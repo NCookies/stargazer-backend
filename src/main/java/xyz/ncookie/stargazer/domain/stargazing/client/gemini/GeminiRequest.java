@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.domain.stargazing.dto;
+package xyz.ncookie.stargazer.domain.stargazing.client.gemini;
 
 import java.util.Collections;
 import java.util.List;

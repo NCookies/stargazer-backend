@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.domain.stargazing.dto;
+package xyz.ncookie.stargazer.domain.stargazing.dto.request;
 
 public record StargazingRequest(
 	double lat,          // 위도

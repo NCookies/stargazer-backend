@@ -1,9 +1,9 @@
-package xyz.ncookie.stargazer.domain.stargazing.dto;
+package xyz.ncookie.stargazer.domain.stargazing.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record StargazingResponse(
+public record StargazingAnalyzeResponse(
 	String date,			// "2025-12-19"
 	String time,			// "22:00"
 

@@ -7,9 +7,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
-import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingForecastResponse;
-import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingRequest;
-import xyz.ncookie.stargazer.domain.stargazing.dto.StargazingResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastResponse;
+import xyz.ncookie.stargazer.domain.stargazing.dto.request.StargazingRequest;
+import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingAnalyzeResponse;
 import xyz.ncookie.stargazer.domain.stargazing.service.StargazingService;
 
 @RestController
@@ -21,7 +21,7 @@ public class StargazingController {
 	private final StargazingService stargazingService;
 
 	@PostMapping("/analyze")
-	public StargazingResponse analyzeStargazingCondition(@RequestBody StargazingRequest request) {
+	public StargazingAnalyzeResponse analyzeStargazingCondition(@RequestBody StargazingRequest request) {
 
 		return stargazingService.getAnalyze(request);
 	}

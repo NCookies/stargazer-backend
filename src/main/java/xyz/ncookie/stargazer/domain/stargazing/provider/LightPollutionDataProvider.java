@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.domain.stargazing.service;
+package xyz.ncookie.stargazer.domain.stargazing.provider;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class LightPollutionService {
+public class LightPollutionDataProvider {
 
 	// 메모리 검색을 위한 Map (Key: "lat_idx,lon_idx", Value: BortleClass)
 	// 0.01도(약 1.1km) 단위로 격자를 나눔
