@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.dto;
+package xyz.ncookie.stargazer.domain.stargazing.client.openweather;
 
 import java.util.List;
 
