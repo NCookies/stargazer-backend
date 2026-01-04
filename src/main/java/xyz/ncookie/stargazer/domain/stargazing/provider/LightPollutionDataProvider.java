@@ -21,10 +21,7 @@ public class LightPollutionDataProvider {
 	@Cacheable(value = "bortleZone", key = "#lat + '-' + #lon")
 	public int getBortleClass(double lat, double lon) {
 
-		// Point 객체 생성 포맷: "POINT(경도 위도)"
-		String pointText = String.format("POINT(%f %f)", lat, lon);
-		
-		return lightPollutionRepository.findNearest(pointText)
+		return lightPollutionRepository.findNearest(lat, lon)
 			.map(LightPollution::getBortleClass)
 			.orElse(4);	// 데이터가 없다면 중간값(4)로 처리
 
