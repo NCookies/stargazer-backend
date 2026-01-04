@@ -27,13 +27,25 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 
+    // devtools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
+    // lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // DB
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+
+    implementation 'org.hibernate.orm:hibernate-spatial'
+
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Stargazing
     implementation 'org.shredzone.commons:commons-suncalc:3.7'
 
+    // test
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
