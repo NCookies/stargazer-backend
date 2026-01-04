@@ -30,6 +30,7 @@ import xyz.ncookie.stargazer.domain.stargazing.enums.BortleGrade;
 import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
 import xyz.ncookie.stargazer.domain.stargazing.model.StarAnalysisResult;
 import xyz.ncookie.stargazer.domain.stargazing.enums.VisibilityGrade;
+import xyz.ncookie.stargazer.infra.lightpollution.LightPollutionMigrationRunner;
 
 @Service
 @Slf4j
@@ -43,6 +44,8 @@ public class StargazingService {
 	private final StargazingScoringEngine scoringEngine;
 
 	private final OpenWeatherResponseMapper openWeatherResponseMapper;
+
+	private final LightPollutionMigrationRunner runner;
 
 	/**
 	 * 특정 시점(현재 또는 미래)의 관측 적합도 상세 분석
