@@ -1,5 +1,6 @@
 package xyz.ncookie.stargazer.domain.stargazing.provider;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class LightPollutionDataProvider {
 	/**
 	 * 특정 좌표의 Bortle 등급 조회
 	 */
+	@Cacheable(value = "bortleZone", key = "#lat + '-' + #lon")
 	public int getBortleClass(double lat, double lon) {
 
 		// Point 객체 생성 포맷: "POINT(경도 위도)"

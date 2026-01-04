@@ -18,6 +18,11 @@ spring:
                 # 포맷팅된 SQL 로그 보기 (개발용)
                 format_sql: true
 
+    cache:
+        type: caffeine
+        caffeine:
+            spec: maximumSize=500, expireAfterWrite=10m # 최대 500개, 쓴 지 10분 뒤 삭제
+
 weather:
     api:
         key: ${WEATHER_API_KEY}
