@@ -1,5 +1,7 @@
 package xyz.ncookie.stargazer.domain.stargazing.client.gemini;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -30,6 +32,7 @@ public class GeminiAnalysisClient {
 
 	public GeminiAnalysisResult getAnalysis(
 		int finalScore,
+		List<String> reasons,
 		double lat,
 		double lon,
 		OpenWeatherResponse w,
@@ -52,6 +55,7 @@ public class GeminiAnalysisClient {
 		
 			[기상 및 천문 데이터]
 			- **최종 관측 점수: %d점** (기상과 광해 페널티가 이미 반영된 최종값)
+			- 사유 : %s
 			- 하늘 상태: 구름 %d%%, 시정 %s
 			- 달 상태: %s (밝기 %.2f)
 		
@@ -74,6 +78,7 @@ public class GeminiAnalysisClient {
 			addressName,            // 주소
 			bortleClass,             // 광해 등급 (CSV 값)
 			finalScore,
+			reasons,
 			w.clouds().all(),       // 구름
 			VisibilityGrade.from(w.visibility()).getLabel(), // 시정 텍스트
 			MoonPhase.calculate(a.moonPhaseDegree()), // 달 이름

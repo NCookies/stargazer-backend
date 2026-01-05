@@ -5,6 +5,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.shredzone.commons.suncalc.MoonIllumination;
+import org.shredzone.commons.suncalc.MoonPhase;
 import org.shredzone.commons.suncalc.MoonPosition;
 import org.shredzone.commons.suncalc.MoonTimes;
 import org.shredzone.commons.suncalc.SunPosition;
@@ -16,6 +17,8 @@ import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
 @Component
 public class AstronomyCalculator {
 
+	private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
 	// 천문 데이터 계산 (월령, 일몰, 월출 등)
 	public RawAstronomyData calculate(double lat, double lon, ZonedDateTime dateTime) {
 
@@ -25,38 +28,28 @@ public class AstronomyCalculator {
 		// 달 위치 (고도)
 		MoonPosition moonPos = MoonPosition.compute().at(lat, lon).on(dateTime).execute();
 
-		// 일몰 시간
+		// 일출/일몰 시간 계산
 		SunTimes sunTimes = SunTimes.compute().on(dateTime).at(lat, lon).execute();
-		String sunset = (sunTimes.getSet() != null)
-			? sunTimes.getSet().withZoneSameInstant(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HH:mm"))
-			: "--:--";
+		String sunrise = formatTime(sunTimes.getRise());
+		String sunset = formatTime(sunTimes.getSet());
 
-		// 월출 시간
+		// 월출/월몰 시간 계산
 		MoonTimes moonTimes = MoonTimes.compute().on(dateTime).at(lat, lon).execute();
-		String moonrise = (moonTimes.getRise() != null)
-			? moonTimes.getRise().withZoneSameInstant(ZoneId.of("Asia/Seoul")).format(DateTimeFormatter.ofPattern("HH:mm"))
-			: "뜨지 않음";
+		String moonrise = formatTime(moonTimes.getRise());
+		String moonset = formatTime(moonTimes.getSet());
 
 		return new RawAstronomyData(
 			moonIllum.getFraction(),
 			moonIllum.getPhase(),
 			moonPos.getAltitude(),
+			sunrise,
+			sunset,
 			moonrise,
-			sunset
+			moonset
 		);
 	}
 
-	// 낮/밤 판별 (시민박명 기준)
-	public boolean isDaytime(double lat, double lon, ZonedDateTime time) {
-
-		SunPosition sunPos = SunPosition.compute().at(lat, lon).on(time).execute();
-		return sunPos.getAltitude() > -6.0;
-	}
-
-	// 여명(박명) 페널티 계산 로직도 여기 혹은 ScoringEngine에 위치 가능
-	public double getSunAltitude(double lat, double lon, ZonedDateTime time) {
-
-		SunPosition sunPos = SunPosition.compute().at(lat, lon).on(time).execute();
-		return sunPos.getAltitude();
+	private String formatTime(ZonedDateTime time) {
+		return (time != null) ? time.format(timeFormatter) : "--:--";
 	}
 }
