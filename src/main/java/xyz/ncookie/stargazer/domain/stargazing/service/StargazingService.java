@@ -71,7 +71,7 @@ public class StargazingService {
 		StarAnalysisResult result = scoringEngine.calculateScore(request.lat(), request.lon(), targetDateTime, weatherData);
 
 		GeminiAnalysisResult aiResult = geminiAnalysisClient.getAnalysis(
-			result.finalScore(),
+			result.score(),
 			request.lat(),
 			request.lon(),
 			weatherData,
@@ -134,7 +134,8 @@ public class StargazingService {
 			// DTO 생성
 			StargazingForecastResponse.HourlyForecast hourlyDto = new StargazingForecastResponse.HourlyForecast(
 				itemTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-				result.finalScore(), // 일관성 있는 점수!
+				result.score(),
+				result.reasons(),
 				String.format("%.1f등급", 6.0 - (item.clouds().all() / 20.0)),
 				item.clouds().all(),
 				MoonPhase.calculate(result.astro().moonPhaseDegree()).name()

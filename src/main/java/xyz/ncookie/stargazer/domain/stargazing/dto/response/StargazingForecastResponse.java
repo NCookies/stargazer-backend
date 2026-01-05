@@ -13,6 +13,7 @@ public record StargazingForecastResponse(
 	public record HourlyForecast(
 		String time,           // "21:00"
 		int score,             // 점수
+		List<String> reasons,  // 상세 감점 사유 (프론트 표시용)
 		String starGrade,      // "4.5등급" (별 등급) - 계산값
 		int cloudCover,        // 구름
 		String moonPhase       // 달 모양
