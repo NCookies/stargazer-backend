@@ -72,6 +72,7 @@ public class StargazingService {
 
 		GeminiAnalysisResult aiResult = geminiAnalysisClient.getAnalysis(
 			result.score(),
+			result.reasons(),
 			request.lat(),
 			request.lon(),
 			weatherData,
@@ -82,7 +83,8 @@ public class StargazingService {
 		return new StargazingAnalyzeResponse(
 			targetDateTime.toLocalDate().toString(),
 			targetDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-			aiResult.finalScore(),
+			result.score(),
+			result.reasons(),
 			aiResult.comment(),
 			new StargazingAnalyzeResponse.WeatherInfo(
 				weatherData.clouds().all(),
