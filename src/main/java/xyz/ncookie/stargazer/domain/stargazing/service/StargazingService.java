@@ -1,7 +1,5 @@
 package xyz.ncookie.stargazer.domain.stargazing.service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -54,8 +52,8 @@ public class StargazingService {
 
 		// 파싱
 		ZonedDateTime targetDateTime = ZonedDateTime.of(
-			LocalDate.parse(request.date()),
-			LocalTime.parse(request.time()),
+			request.date(),
+			request.time(),
 			ZoneId.of("Asia/Seoul")
 		);
 		// ZonedDateTime targetDateTime = ZonedDateTime.of(
