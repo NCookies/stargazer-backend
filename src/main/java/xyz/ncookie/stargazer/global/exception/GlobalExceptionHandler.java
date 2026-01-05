@@ -1,7 +1,14 @@
 package xyz.ncookie.stargazer.global.exception;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -11,6 +18,27 @@ import xyz.ncookie.stargazer.global.dto.CommonResponse;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	/**
+	 * [GET] @ModelAttribute 유효성 검사 실패 시 발생 (BindException)
+	 * [POST] @RequestBody 유효성 검사 실패 시 발생 (MethodArgumentNotValidException)
+	 * 두 예외를 모두 잡아서 처리
+	 * MethodArgumentNotValidException은 BindException을 상속받으므로 BindException으로 한 번에 처리가 가능
+	 */
+	@ExceptionHandler({BindException.class, MethodArgumentNotValidException.class})
+	public ResponseEntity<CommonResponse<Map<String, String>>> handleValidationException(BindException e) {
+
+		BindingResult bindingResult = e.getBindingResult();
+
+		Map<String, String> errorMap = new HashMap<>();
+		for (FieldError fieldError : bindingResult.getFieldErrors()) {
+			errorMap.put(fieldError.getField(), fieldError.getDefaultMessage());
+		}
+
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(CommonResponse.of(false, HttpStatus.BAD_REQUEST.value(), "유효성 검사에 실패하였습니다.", errorMap));
+	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<CommonResponse<Void>> handleIllegalArgument(IllegalArgumentException e) {

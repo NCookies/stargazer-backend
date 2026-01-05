@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastResponse;
 import xyz.ncookie.stargazer.domain.stargazing.dto.request.StargazingRequest;
@@ -21,13 +22,13 @@ public class StargazingController {
 	private final StargazingService stargazingService;
 
 	@GetMapping("/analyze")
-	public StargazingAnalyzeResponse analyzeStargazingCondition(@ModelAttribute StargazingRequest request) {
+	public StargazingAnalyzeResponse analyzeStargazingCondition(@Valid @ModelAttribute StargazingRequest request) {
 
 		return stargazingService.getAnalyze(request);
 	}
 
 	@GetMapping("/forecast")
-	public StargazingForecastResponse getForecast(@ModelAttribute StargazingRequest request) {
+	public StargazingForecastResponse getForecast(@Valid @ModelAttribute StargazingRequest request) {
 
 		return stargazingService.getForecast(request.lat(), request.lon());
 	}
