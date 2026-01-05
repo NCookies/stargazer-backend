@@ -1,0 +1,32 @@
+spring:
+    application:
+        name: stargazer
+
+    datasource:
+        url: jdbc:mysql://localhost:3306/stargazer?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+        username: user
+        password: password
+        driver-class-name: com.mysql.cj.jdbc.Driver
+
+    jpa:
+        hibernate:
+            ddl-auto: update
+        properties:
+            hibernate:
+                # 중요: MySQL 8 버전에 맞는 Dialect 사용 (Spatial 자동 지원)
+                dialect: org.hibernate.dialect.MySQLDialect
+                # 포맷팅된 SQL 로그 보기 (개발용)
+                format_sql: true
+
+    cache:
+        type: caffeine
+        caffeine:
+            spec: maximumSize=500, expireAfterWrite=10m # 최대 500개, 쓴 지 10분 뒤 삭제
+
+weather:
+    api:
+        key: ${WEATHER_API_KEY}
+
+gemini:
+    api:
+        key: ${LLM_API_KEY}

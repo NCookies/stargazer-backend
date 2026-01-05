@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+    mysql:
+        image: mysql:8.0
+        container_name: stargazer-db
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: stargazer
+            MYSQL_USER: user
+            MYSQL_PASSWORD: password
+
+            TZ: Asia/Seoul
+        command:
+          # 대량 데이터 insert 시 패킷 크기 에러 방지 및 인코딩 설정
+            --character-set-server=utf8mb4
+            --collation-server=utf8mb4_unicode_ci
+            --max_allowed_packet=64M
+        volumes:
+            # DB 데이터를 로컬에 영구 저장 (컨테이너 내려도 데이터 유지)
+            - ./db/mysql/data:/var/lib/mysql
+        restart: always
+
+    redis:
+        image: redis:alpine
+        container_name: stargazer-redis
+        ports:
+            - "6379:6379"
