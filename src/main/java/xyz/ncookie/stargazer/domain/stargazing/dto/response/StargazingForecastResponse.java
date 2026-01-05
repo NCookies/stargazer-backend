@@ -7,6 +7,10 @@ public record StargazingForecastResponse(
 ) {
 	public record DailyForecast(
 		String date,           // "2025-05-20 (금)"
+		String sunrise,
+		String sunset,
+		String moonrise,
+		String moonset,
 		List<HourlyForecast> hourlyForecasts // 그 날 밤의 시간대별 데이터
 	) {}
 

@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,13 +25,13 @@ import xyz.ncookie.stargazer.domain.stargazing.dto.request.StargazingRequest;
 import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingAnalyzeResponse;
 import xyz.ncookie.stargazer.domain.stargazing.dto.mapper.OpenWeatherResponseMapper;
 import xyz.ncookie.stargazer.domain.stargazing.engine.StargazingScoringEngine;
+import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
 import xyz.ncookie.stargazer.domain.stargazing.provider.WeatherDataProvider;
 import xyz.ncookie.stargazer.domain.stargazing.model.GeminiAnalysisResult;
 import xyz.ncookie.stargazer.domain.stargazing.enums.BortleGrade;
 import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
 import xyz.ncookie.stargazer.domain.stargazing.model.StarAnalysisResult;
 import xyz.ncookie.stargazer.domain.stargazing.enums.VisibilityGrade;
-import xyz.ncookie.stargazer.infra.lightpollution.LightPollutionMigrationRunner;
 
 @Service
 @Slf4j
@@ -44,8 +45,6 @@ public class StargazingService {
 	private final StargazingScoringEngine scoringEngine;
 
 	private final OpenWeatherResponseMapper openWeatherResponseMapper;
-
-	private final LightPollutionMigrationRunner runner;
 
 	/**
 	 * 특정 시점(현재 또는 미래)의 관측 적합도 상세 분석
@@ -93,8 +92,10 @@ public class StargazingService {
 			),
 			new StargazingAnalyzeResponse.AstronomyInfo(
 				MoonPhase.calculate(result.astro().moonPhaseDegree()).name(),
-				result.astro().moonRiseTime(),
-				result.astro().sunsetTime()
+				result.astro().sunrise(),
+				result.astro().sunset(),
+				result.astro().moonrise(),
+				result.astro().moonset()
 			),
 			new StargazingAnalyzeResponse.LightPollutionInfo(
 				"Class " + result.bortleClass(),
@@ -109,31 +110,31 @@ public class StargazingService {
 	 */
 	public StargazingForecastResponse getForecast(double lat, double lon) {
 
+		Map<String, List<StargazingForecastResponse.HourlyForecast>> groupedData = new LinkedHashMap<>();
+		Map<String, RawAstronomyData> dailyAstroMap = new HashMap<>();
+
 		OpenWeatherForecastResponse rawData = weatherMapClient.fetchForecastApi(lat, lon);
 
 		if (rawData == null || rawData.list() == null) {
 			return new StargazingForecastResponse(List.of());
 		}
 
-		// 데이터 가공 (밤 시간대 필터링 및 그룹화)
-		Map<String, List<StargazingForecastResponse.HourlyForecast>> groupedData = new LinkedHashMap<>();
-
 		for (OpenWeatherForecastResponse.Item item : rawData.list()) {
 			ZonedDateTime itemTime = ZonedDateTime.ofInstant(
 				java.time.Instant.ofEpochSecond(item.dt()), ZoneId.of("Asia/Seoul")
 			);
 
-			// 태양 고도 체크 (이건 반복문 최적화를 위해 여기서 먼저 체크)
+			// 태양 고도 체크
 			SunPosition sunPos = SunPosition.compute().at(lat, lon).on(itemTime).execute();
 			if (sunPos.getAltitude() > -6.0) continue; // 낮이면 스킵
 
-			// 예보 데이터를 공통 포맷(OpenWeatherResponse)으로 변환
-			OpenWeatherResponse tempWeather = openWeatherResponseMapper.toWeatherResponse(item);
+			OpenWeatherResponse weatherResponse = openWeatherResponseMapper.toWeatherResponse(item);
 
-			// 공통 분석 메서드 호출! (getAnalyze와 똑같은 로직 적용됨)
-			StarAnalysisResult result = scoringEngine.calculateScore(lat, lon, itemTime, tempWeather);
+			StarAnalysisResult result = scoringEngine.calculateScore(lat, lon, itemTime, weatherResponse);
 
-			// DTO 생성
+			String dateKey = itemTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+			dailyAstroMap.putIfAbsent(dateKey, result.astro());
+
 			StargazingForecastResponse.HourlyForecast hourlyDto = new StargazingForecastResponse.HourlyForecast(
 				itemTime.format(DateTimeFormatter.ofPattern("HH:mm")),
 				result.score(),
@@ -144,13 +145,28 @@ public class StargazingService {
 			);
 
 			// 날짜별 그룹화
-			String dateKey = itemTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 			groupedData.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(hourlyDto);
 		}
 
-		// 최종 응답 변환 (Map -> List)
 		List<StargazingForecastResponse.DailyForecast> dailyList = groupedData.entrySet().stream()
-			.map(entry -> new StargazingForecastResponse.DailyForecast(entry.getKey(), entry.getValue()))
+			.map(entry -> {
+				String date = entry.getKey();
+				RawAstronomyData astroData = dailyAstroMap.get(date);
+
+				String sunrise = astroData.sunrise();
+				String sunset = astroData.sunset();
+				String moonrise = astroData.moonrise();
+				String moonset = astroData.moonset();
+
+				return new StargazingForecastResponse.DailyForecast(
+					date,
+					sunrise,
+					sunset,
+					moonrise,
+					moonset,
+					entry.getValue()
+				);
+			})
 			.toList();
 
 		return new StargazingForecastResponse(dailyList);

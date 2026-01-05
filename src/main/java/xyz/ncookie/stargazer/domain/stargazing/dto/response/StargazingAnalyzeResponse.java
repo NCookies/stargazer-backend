@@ -30,8 +30,10 @@ public record StargazingAnalyzeResponse(
 
 	public record AstronomyInfo(
 		String moonPhase,       // "초승달"
-		String moonRiseTime,    // "23:45"
-		String sunsetTime       // "19:32"
+		String sunrise,
+		String sunset,
+		String moonrise,
+		String moonset
 	) {}
 
 	public record LightPollutionInfo(
