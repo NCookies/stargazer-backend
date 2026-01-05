@@ -29,10 +29,19 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<CommonResponse<Map<String, String>>> handleValidationException(BindException e) {
 
 		BindingResult bindingResult = e.getBindingResult();
-
 		Map<String, String> errorMap = new HashMap<>();
+
 		for (FieldError fieldError : bindingResult.getFieldErrors()) {
-			errorMap.put(fieldError.getField(), fieldError.getDefaultMessage());
+			String message;
+
+			// 변환(TypeMismatch) 실패인지 체크
+			if (fieldError.isBindingFailure()) {
+				message = "입력 형식이 올바르지 않습니다."; // "Failed to convert..." 대신 나갈 메시지
+			} else {
+				message = fieldError.getDefaultMessage(); // @Annotation 메시지
+			}
+
+			errorMap.put(fieldError.getField(), message);
 		}
 
 		return ResponseEntity
