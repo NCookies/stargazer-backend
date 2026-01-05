@@ -49,6 +49,9 @@ dependencies {
     // Stargazing
     implementation 'org.shredzone.commons:commons-suncalc:3.7'
 
+    // JSON
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
