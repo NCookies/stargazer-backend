@@ -1,6 +1,5 @@
 ### Custom ###
 .env
-/src/main/resources/light_pollution_korea.csv
 db
 
 HELP.md

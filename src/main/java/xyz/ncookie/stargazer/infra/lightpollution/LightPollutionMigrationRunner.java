@@ -31,7 +31,7 @@ public class LightPollutionMigrationRunner implements CommandLineRunner {
 	@Override
 	public void run(String @NonNull ... args) throws Exception {
 		if (repository.count() > 0) {
-			log.error("광해 데이터가 이미 존재합니다. 마이그레이션을 건너뜁니다.");
+			log.info("광해 데이터가 이미 존재합니다. 마이그레이션을 건너뜁니다.");
 			return;
 		}
 

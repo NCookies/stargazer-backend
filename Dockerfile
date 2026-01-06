@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim
+FROM amazoncorretto:17
 WORKDIR /app
 
 COPY build/libs/*SNAPSHOT.jar app.jar
