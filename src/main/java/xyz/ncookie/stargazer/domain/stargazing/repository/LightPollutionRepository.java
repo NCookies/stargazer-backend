@@ -15,16 +15,16 @@ public interface LightPollutionRepository extends JpaRepository<LightPollution, 
 	/**
 	 * ST_Buffer 대신 ST_MakeEnvelope 사용
 	 * 이유: 원을 그리는 것보다 사각형을 만드는 게 훨씬 빠름 (CPU 절약)
-	 * 범위: 내 위치 기준 ±0.1도 (약 10km x 10km 박스)
+	 * 범위: 내 위치 기준 ±0.01도 (약 1km x 1km 박스)
 	 */
 	@Query(value = """
         SELECT * FROM light_pollution lp
         WHERE MBRContains(
-            ST_SRID( -- 만들어진 사각형에 SRID 4326 부여 (필수!)
+            ST_SRID(
                 ST_MakeEnvelope(
-                    POINT(:lon - 0.1, :lat - 0.1), -- 좌측 하단 (Min X, Min Y)
-                    POINT(:lon + 0.1, :lat + 0.1)  -- 우측 상단 (Max X, Max Y)
-                ), 
+                    POINT(:lon - 0.01, :lat - 0.01), -- 좌측 하단 (Min X, Min Y)
+                    POINT(:lon + 0.01, :lat + 0.01)  -- 우측 상단 (Max X, Max Y)
+                ),
             4326),
             lp.location
         )

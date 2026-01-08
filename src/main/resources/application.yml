@@ -3,9 +3,9 @@ spring:
         name: stargazer
 
     datasource:
-        url: jdbc:mysql://localhost:3306/stargazer?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
-        username: user
-        password: password
+        url: jdbc:mysql://${MYSQL_ENDPOINT}:3306/stargazer?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+        username: ${MYSQL_USERNAME}
+        password: ${MYSQL_PASSWORD}
         driver-class-name: com.mysql.cj.jdbc.Driver
 
     jpa:
