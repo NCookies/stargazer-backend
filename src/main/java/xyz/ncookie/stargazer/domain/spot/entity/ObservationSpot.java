@@ -18,7 +18,7 @@ public class ObservationSpot {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false)
+	@Column(nullable = false, unique = true)
 	private String title;           // 명소 이름 (예: 강릉 안반데기)
 
 	@Column(nullable = false)
