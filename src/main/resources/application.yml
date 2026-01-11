@@ -18,6 +18,10 @@ spring:
                 # 포맷팅된 SQL 로그 보기 (개발용)
                 format_sql: true
 
+    sql:
+      init:
+          mode: always
+
     cache:
         type: caffeine
         caffeine:
