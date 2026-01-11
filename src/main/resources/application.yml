@@ -18,9 +18,12 @@ spring:
                 # 포맷팅된 SQL 로그 보기 (개발용)
                 format_sql: true
 
+        # Hibernate가 테이블을 다 만들 때까지 data.sql 실행을 미룸
+        defer-datasource-initialization: true
+
     sql:
-      init:
-          mode: always
+        init:
+            mode: always
 
     cache:
         type: caffeine
