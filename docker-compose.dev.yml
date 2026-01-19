@@ -5,8 +5,9 @@ services:
         image: mysql:8.0
         container_name: stargazer-db
         ports:
-            - "3306:3306"
+            - "127.0.0.1:3306:3306"
         environment:
+            MYSQL_ROOT_HOST: "%"
             MYSQL_ROOT_PASSWORD: root
             MYSQL_DATABASE: stargazer
             MYSQL_USER: user
@@ -27,4 +28,4 @@ services:
         image: redis:alpine
         container_name: stargazer-redis
         ports:
-            - "6379:6379"
+            - "127.0.0.1:6379:6379"
