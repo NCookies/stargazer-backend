@@ -15,19 +15,16 @@ public class RefreshTokenRedisRepository {
 
 	private static final String PREFIX = "RT:";
 
-	public void save(Long memberId, String refreshToken, long expireMs) {
-
+	public void save(String refreshToken, Long memberId, long expireMs) {
 		redisTemplate.opsForValue()
-			.set(PREFIX + memberId, refreshToken, expireMs, TimeUnit.MILLISECONDS);
+			.set(PREFIX + refreshToken, memberId.toString(), expireMs, TimeUnit.MILLISECONDS);
 	}
 
-	public String find(Long memberId) {
-
-		return redisTemplate.opsForValue().get(PREFIX + memberId);
+	public String find(String refreshToken) {
+		return redisTemplate.opsForValue().get(PREFIX + refreshToken);
 	}
 
-	public void delete(Long memberId) {
-
-		redisTemplate.delete(PREFIX + memberId);
+	public void delete(String refreshToken) {
+		redisTemplate.delete(PREFIX + refreshToken);
 	}
 }

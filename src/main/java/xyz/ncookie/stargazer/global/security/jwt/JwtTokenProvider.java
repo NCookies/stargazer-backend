@@ -16,7 +16,7 @@ import xyz.ncookie.stargazer.domain.member.entity.Role;
 public class JwtTokenProvider {
 
 	private final Key key;
-	public static final long ACCESS_EXPIRE_MS = 1000L * 60 * 30;     // 30분
+	public static final long ACCESS_EXPIRE_MS = 1000L * 60 * 15;     // 15분
 	public static final long REFRESH_EXPIRE_MS = 1000L * 60 * 60 * 24 * 14; // 14일
 
 	public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {

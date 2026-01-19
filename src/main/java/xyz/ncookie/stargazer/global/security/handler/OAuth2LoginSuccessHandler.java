@@ -37,7 +37,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 		String accessToken = jwtTokenProvider.createAccessToken(memberId);
 		String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
 
-		refreshTokenRedisRepository.save(memberId, refreshToken, JwtTokenProvider.REFRESH_EXPIRE_MS);
+		refreshTokenRedisRepository.save(refreshToken, memberId, JwtTokenProvider.REFRESH_EXPIRE_MS);
 
 		ResponseCookie rtCookie = ResponseCookie.from("refreshToken", refreshToken)
 			.httpOnly(true)
