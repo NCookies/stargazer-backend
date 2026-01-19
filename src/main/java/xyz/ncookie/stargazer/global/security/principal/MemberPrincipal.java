@@ -48,7 +48,7 @@ public class MemberPrincipal implements UserDetails, OAuth2User {
 
 	@Override
 	public String getName() {
-		return member.getId().toString();
+		return member.getProviderId();
 	}
 
 	// 기타는 true 처리
@@ -56,4 +56,8 @@ public class MemberPrincipal implements UserDetails, OAuth2User {
 	@Override public boolean isAccountNonLocked() { return true; }
 	@Override public boolean isCredentialsNonExpired() { return true; }
 	@Override public boolean isEnabled() { return true; }
+
+	public Long getMemberId() {
+		return member.getId();
+	}
 }
