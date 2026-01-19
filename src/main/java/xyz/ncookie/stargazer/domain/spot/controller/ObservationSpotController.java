@@ -27,5 +27,4 @@ public class ObservationSpotController {
 
 		return observationSpotService.getObservationSpots(request);
 	}
-
 }

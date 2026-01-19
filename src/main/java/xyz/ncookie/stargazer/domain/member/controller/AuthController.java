@@ -4,8 +4,8 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,15 +14,15 @@ import xyz.ncookie.stargazer.global.security.jwt.JwtTokenProvider;
 import xyz.ncookie.stargazer.global.security.redis.RefreshTokenRedisRepository;
 
 @RestController
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
-@RequestMapping("/auth")
 public class AuthController {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final RefreshTokenRedisRepository refreshTokenRedisRepository;
 
 	@PostMapping("/reissue")
-	public ResponseEntity<?> reissue(@RequestBody String refreshToken) {
+	public ResponseEntity<?> reissue(@CookieValue String refreshToken) {
 
 		Long memberId = jwtTokenProvider.getMemberId(refreshToken);
 

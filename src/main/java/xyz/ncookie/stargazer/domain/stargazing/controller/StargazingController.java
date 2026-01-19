@@ -1,6 +1,5 @@
 package xyz.ncookie.stargazer.domain.stargazing.controller;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +15,6 @@ import xyz.ncookie.stargazer.domain.stargazing.service.StargazingService;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class StargazingController {
 
 	private final StargazingService stargazingService;
