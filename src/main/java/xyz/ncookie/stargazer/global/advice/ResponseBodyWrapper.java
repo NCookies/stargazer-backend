@@ -57,7 +57,7 @@ public class ResponseBodyWrapper implements ResponseBodyAdvice<Object> {
 			: 200;
 
 		// CommonResponse 객체 생성
-		CommonResponse<Object> responseBody = CommonResponse.of(true, status, message, body);
+		CommonResponse<Object> responseBody = CommonResponse.success(true, status, message, body);
 
 		if (body instanceof String) {
 			try {
