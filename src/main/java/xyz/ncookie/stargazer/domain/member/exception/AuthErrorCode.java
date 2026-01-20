@@ -8,10 +8,9 @@ import xyz.ncookie.stargazer.global.exception.ErrorCode;
 
 @Getter
 @RequiredArgsConstructor
-public enum MemberErrorCode implements ErrorCode {
+public enum AuthErrorCode implements ErrorCode {
 
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Refresh Token 입니다."),
-	INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access Token 입니다.")
 	;
 
 	private final HttpStatus status;

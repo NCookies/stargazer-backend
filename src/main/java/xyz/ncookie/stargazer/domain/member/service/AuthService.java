@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.member.dto.response.TokenDto;
-import xyz.ncookie.stargazer.domain.member.exception.MemberErrorCode;
+import xyz.ncookie.stargazer.domain.member.exception.AuthErrorCode;
 import xyz.ncookie.stargazer.domain.member.exception.AuthException;
 import xyz.ncookie.stargazer.global.security.jwt.JwtTokenProvider;
 import xyz.ncookie.stargazer.global.security.redis.RefreshTokenRedisRepository;
@@ -23,13 +23,13 @@ public class AuthService {
 
 		if (refreshToken == null) {
 			log.debug("토큰 재발급 실패! 유효하지 않은 refresh 토큰입니다.");
-			throw new AuthException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+			throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
 		}
 
 		Long memberId = refreshTokenRedisRepository.find(refreshToken);
 		if (memberId == null) {
 			log.debug("토큰 재발급 실패! 유효하지 않은 refresh 토큰입니다.");
-			throw new AuthException(MemberErrorCode.INVALID_REFRESH_TOKEN);
+			throw new AuthException(AuthErrorCode.INVALID_REFRESH_TOKEN);
 		}
 
 		refreshTokenRedisRepository.delete(refreshToken);
