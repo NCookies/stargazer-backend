@@ -38,9 +38,6 @@ public class Member {
 
 	private String providerId;	// oauth2 회원만 사용
 
-	@Column(length = 1000)
-	private String refreshToken;
-
 	@Builder
 	public Member(String email, String password, String nickname, Role role, AuthProvider authProvider, String providerId) {
 		this.email = email;
@@ -69,9 +66,5 @@ public class Member {
 			.role(Role.USER)
 			.authProvider(AuthProvider.LOCAL)
 			.build();
-	}
-
-	public void updateRefreshToken(String refreshToken) {
-		this.refreshToken = refreshToken;
 	}
 }
