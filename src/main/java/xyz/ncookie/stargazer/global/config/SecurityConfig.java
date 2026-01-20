@@ -12,13 +12,16 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.global.security.jwt.JwtAuthenticationEntryPoint;
 import xyz.ncookie.stargazer.global.security.jwt.JwtAuthenticationFilter;
 import xyz.ncookie.stargazer.global.security.jwt.JwtTokenProvider;
 import xyz.ncookie.stargazer.global.security.handler.OAuth2LoginFailureHandler;
@@ -38,6 +41,7 @@ public class SecurityConfig {
 	private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) {
@@ -70,7 +74,11 @@ public class SecurityConfig {
 					.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
 					.successHandler(oAuth2LoginSuccessHandler)
 					.failureHandler(oAuth2LoginFailureHandler)
-			);
+			)
+
+			.exceptionHandling(exception -> exception
+				.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+		);
 
 		http.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
 
@@ -93,14 +101,28 @@ public class SecurityConfig {
 		));
 
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+		// 허용할 헤더
+		config.setAllowedHeaders(List.of("*"));
+
+		// 쿠키 주고받기 허용
 		config.setAllowCredentials(true);
 
-		// 프론트에서 Authorization 헤더 읽어야 한다면
-		config.setExposedHeaders(List.of("Authorization"));
+		// 클라이언트가 읽을 수 있는 헤더
+		config.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", config);
 		return source;
+	}
+
+	@Bean
+	public AuthenticationEntryPoint authenticationEntryPoint() {
+
+		return (request, response, authException) -> {
+			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+			response.setContentType("application/json;charset=UTF-8");
+			response.getWriter().write("{\"success\":false,\"message\":\"인증이 필요합니다.\"}");
+		};
 	}
 }
