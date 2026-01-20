@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import xyz.ncookie.stargazer.domain.member.dto.response.TokenDto;
+import xyz.ncookie.stargazer.domain.member.dto.TokenDto;
 import xyz.ncookie.stargazer.domain.member.exception.AuthErrorCode;
 import xyz.ncookie.stargazer.domain.member.exception.AuthException;
 import xyz.ncookie.stargazer.global.security.jwt.JwtTokenProvider;

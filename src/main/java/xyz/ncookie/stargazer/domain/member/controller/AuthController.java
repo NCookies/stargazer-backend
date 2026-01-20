@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import xyz.ncookie.stargazer.domain.member.dto.response.ReissueTokenResponse;
-import xyz.ncookie.stargazer.domain.member.dto.response.TokenDto;
+import xyz.ncookie.stargazer.domain.member.dto.TokenDto;
 import xyz.ncookie.stargazer.domain.member.service.AuthService;
 import xyz.ncookie.stargazer.global.security.jwt.RefreshToken;
 import xyz.ncookie.stargazer.global.security.util.CookieUtil;
