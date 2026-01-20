@@ -6,7 +6,9 @@ import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -16,6 +18,8 @@ import xyz.ncookie.stargazer.domain.member.entity.Role;
 public class JwtTokenProvider {
 
 	private final Key key;
+
+	public static final String BEARER_PREFIX = "Bearer ";
 	public static final long ACCESS_EXPIRE_MS = 1000L * 60 * 15;     // 15분
 	public static final long REFRESH_EXPIRE_MS = 1000L * 60 * 60 * 24 * 14; // 14일
 
@@ -51,19 +55,29 @@ public class JwtTokenProvider {
 			.compact();
 	}
 
-	public Long getMemberId(String token) {
+	public Claims extractClaims(String token) {
 
-		return Long.valueOf(
-			Jwts.parserBuilder().setSigningKey(key).build()
-				.parseClaimsJws(token)
-				.getBody()
-				.getSubject()
-		);
+		return Jwts.parserBuilder().setSigningKey(key).build()
+			.parseClaimsJws(token)
+			.getBody();
 	}
 
 	public boolean validate(String token) {
 
-		Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
-		return true;
+		try {
+			Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+			return true;
+		} catch (io.jsonwebtoken.JwtException e) {
+			return false;
+		}
+	}
+
+	public String substringToken(String token) {
+
+		if (StringUtils.hasText(token) && token.startsWith(BEARER_PREFIX)) {
+			return token.substring(BEARER_PREFIX.length());
+		}
+
+		return null;
 	}
 }

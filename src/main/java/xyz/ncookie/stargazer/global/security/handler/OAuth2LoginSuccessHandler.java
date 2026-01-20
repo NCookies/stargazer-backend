@@ -39,13 +39,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
 		MemberPrincipal principal = (MemberPrincipal) authentication.getPrincipal();
 
-		Long memberId = principal.getMember().getId();
+		Long memberId = principal.getMemberId();
 
 		String accessToken = jwtTokenProvider.createAccessToken(memberId);
 		String refreshToken = jwtTokenProvider.createRefreshToken(memberId);
 
 		refreshTokenRedisRepository.save(refreshToken, memberId, JwtTokenProvider.REFRESH_EXPIRE_MS);
-
 
 		ResponseCookie rtCookie = cookieUtil.createRefreshTokenCookie(refreshToken);
 		response.addHeader(HttpHeaders.SET_COOKIE, rtCookie.toString());

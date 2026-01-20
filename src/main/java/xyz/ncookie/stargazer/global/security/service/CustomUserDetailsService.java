@@ -26,6 +26,6 @@ public class CustomUserDetailsService implements UserDetailsService {
 			.findByEmailAndAuthProvider(email, AuthProvider.LOCAL)
 			.orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-		return new MemberPrincipal(member, Map.of());
+		return new MemberPrincipal(member.getId(), member.getRole());
 	}
 }

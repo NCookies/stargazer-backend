@@ -49,6 +49,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 				));
 
 		// SecurityContext에 저장할 객체 반환
-		return new MemberPrincipal(member, oAuth2User.getAttributes());
+		return new MemberPrincipal(member.getId(), member.getRole(), oAuth2User.getAttributes());
 	}
 }
