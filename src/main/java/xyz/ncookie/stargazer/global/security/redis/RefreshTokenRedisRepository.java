@@ -11,16 +11,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RefreshTokenRedisRepository {
 
-	private final RedisTemplate<String, String> redisTemplate;
+	private final RedisTemplate<String, Long> redisTemplate;
 
 	private static final String PREFIX = "RT:";
 
 	public void save(String refreshToken, Long memberId, long expireMs) {
 		redisTemplate.opsForValue()
-			.set(PREFIX + refreshToken, memberId.toString(), expireMs, TimeUnit.MILLISECONDS);
+			.set(PREFIX + refreshToken, memberId, expireMs, TimeUnit.MILLISECONDS);
 	}
 
-	public String find(String refreshToken) {
+	public Long find(String refreshToken) {
 		return redisTemplate.opsForValue().get(PREFIX + refreshToken);
 	}
 
