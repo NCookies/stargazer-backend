@@ -1,0 +1,30 @@
+language: "ko"
+
+reviews:
+    profile: "balanced"
+
+    auto_review:
+        enabled: true
+        drafts: false
+
+    comment:
+        enabled: true
+        style: "detailed"
+
+    request_changes:
+        enabled: true
+
+    high_level_summary: true
+
+rules:
+    - "보안 취약점이 의심되면 반드시 지적"
+    - "트랜잭션 경계(@Transactional) 문제 지적"
+    - "NPE 가능성, Optional 오용 지적"
+    - "Spring Security 설정 문제 우선 확인"
+    - "비즈니스 로직과 컨트롤러 책임 분리 여부 확인"
+
+files:
+    ignore:
+        - "**/generated/**"
+        - "**/*.md"
+        - "**/*.sql"
