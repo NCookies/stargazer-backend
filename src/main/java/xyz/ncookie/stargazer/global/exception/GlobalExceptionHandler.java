@@ -19,6 +19,16 @@ import xyz.ncookie.stargazer.global.dto.CommonResponse;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	@ExceptionHandler(BaseException.class)
+	public ResponseEntity<CommonResponse<Void>> handleBaseException(BaseException e) {
+
+		ErrorCode code = e.getErrorCode();
+
+		return ResponseEntity
+			.status(code.getStatus())
+			.body(CommonResponse.error(code));
+	}
+
 	/**
 	 * [GET] @ModelAttribute 유효성 검사 실패 시 발생 (BindException)
 	 * [POST] @RequestBody 유효성 검사 실패 시 발생 (MethodArgumentNotValidException)
@@ -46,7 +56,7 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity
 			.status(HttpStatus.BAD_REQUEST)
-			.body(CommonResponse.of(false, HttpStatus.BAD_REQUEST.value(), "유효성 검사에 실패하였습니다.", errorMap));
+			.body(CommonResponse.error(HttpStatus.BAD_REQUEST.value(), "유효성 검사에 실패하였습니다.", errorMap));
 	}
 
 	@ExceptionHandler(IllegalArgumentException.class)
@@ -56,7 +66,7 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity
 			.status(HttpStatus.BAD_REQUEST)
-			.body(CommonResponse.of(false, HttpStatus.BAD_REQUEST.value(), e.getMessage(), null));
+			.body(CommonResponse.error(HttpStatus.BAD_REQUEST.value(), e.getMessage(), null));
 	}
 
 	@ExceptionHandler(Exception.class)
@@ -66,6 +76,6 @@ public class GlobalExceptionHandler {
 
 		return ResponseEntity
 			.status(HttpStatus.INTERNAL_SERVER_ERROR)
-			.body(CommonResponse.of(false, HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), null));
+			.body(CommonResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage(), null));
 	}
 }

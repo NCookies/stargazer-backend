@@ -7,34 +7,3 @@ spring:
         url: jdbc:mysql://${RDS_ENDPOINT}:3306/stargazer?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
-        driver-class-name: com.mysql.cj.jdbc.Driver
-
-    jpa:
-        hibernate:
-            ddl-auto: update # 초기엔 update, 안정화되면 validate/none 권장
-        properties:
-            hibernate:
-                # 중요: MySQL 8 버전에 맞는 Dialect 사용 (Spatial 자동 지원)
-                dialect: org.hibernate.dialect.MySQLDialect
-                # 포맷팅된 SQL 로그 보기 (개발용)
-                format_sql: true
-
-        # Hibernate가 테이블을 다 만들 때까지 data.sql 실행을 미룸
-        defer-datasource-initialization: true
-
-    sql:
-        init:
-            mode: always
-
-    cache:
-        type: caffeine
-        caffeine:
-            spec: maximumSize=500, expireAfterWrite=10m # 최대 500개, 쓴 지 10분 뒤 삭제
-
-weather:
-    api:
-        key: ${WEATHER_API_KEY}
-
-gemini:
-    api:
-        key: ${GEMINI_API_KEY}
