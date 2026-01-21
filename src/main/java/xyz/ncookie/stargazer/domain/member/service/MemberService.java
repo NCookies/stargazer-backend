@@ -26,6 +26,7 @@ public class MemberService {
 		return MemberInfoResponse.from(member);
 	}
 
+	@Transactional(readOnly = true)
 	public MemberValidationResponse validateEmailDuplicated(String email) {
 
 		if (memberRepository.existsByEmail(email)) {

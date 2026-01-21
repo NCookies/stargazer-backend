@@ -2,6 +2,7 @@ package xyz.ncookie.stargazer.domain.member.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,7 @@ public class AuthService {
 		log.debug("로그아웃 성공!");
 	}
 
+	@Transactional
 	public TokenDto register(@Valid RegisterRequest request) {
 
 		// 이메일 중복 검사
@@ -88,6 +90,7 @@ public class AuthService {
 		return new TokenDto(accessToken, refreshToken);
 	}
 
+	@Transactional(readOnly = true)
 	public TokenDto login(LoginRequest request) {
 
 		Member member = getMemberByEmail(request.email());
