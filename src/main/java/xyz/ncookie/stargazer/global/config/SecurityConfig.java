@@ -61,6 +61,9 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()			// preflight 무조건 허용
 				.requestMatchers("/", "/css/**", "/images/**", "/js/**", "/favicon.ico", "/h2-console/**").permitAll()
 
+				// Swagger UI 경로 허용
+				.requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+
 				.requestMatchers("/api/v1/spots/**", "/api/v1/analyze", "/api/v1/forecast").permitAll() 	// 대부분의 기능은 인증 없이 사용 가능
 				.requestMatchers("/api/v1/auth/**", "/login/**", "/oauth2/**").permitAll()
 

@@ -77,3 +77,15 @@ gemini:
 
 client:
     redirect-base-url: ${CLIENT_REDIRECT_BASE_URL}
+
+springdoc:
+    api-docs:
+        path: /v3/api-docs
+        enabled: true
+    swagger-ui:
+        path: /swagger-ui.html
+        enabled: true
+        tags-sorter: alpha
+        operations-sorter: alpha
+        try-it-out-enabled: true
+        filter: true
