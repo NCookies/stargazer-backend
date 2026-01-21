@@ -115,14 +115,4 @@ public class SecurityConfig {
 		source.registerCorsConfiguration("/**", config);
 		return source;
 	}
-
-	@Bean
-	public AuthenticationEntryPoint authenticationEntryPoint() {
-
-		return (request, response, authException) -> {
-			response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-			response.setContentType("application/json;charset=UTF-8");
-			response.getWriter().write("{\"success\":false,\"message\":\"인증이 필요합니다.\"}");
-		};
-	}
 }
