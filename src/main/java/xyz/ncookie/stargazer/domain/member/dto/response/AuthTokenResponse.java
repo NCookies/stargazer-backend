@@ -1,5 +1,5 @@
 package xyz.ncookie.stargazer.domain.member.dto.response;
 
-public record ReissueTokenResponse(
+public record AuthTokenResponse(
 	String accessToken
 ) {}

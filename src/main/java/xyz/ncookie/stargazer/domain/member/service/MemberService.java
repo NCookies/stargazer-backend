@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.member.dto.response.MemberInfoResponse;
+import xyz.ncookie.stargazer.domain.member.dto.response.MemberValidationResponse;
 import xyz.ncookie.stargazer.domain.member.entity.Member;
 import xyz.ncookie.stargazer.domain.member.exception.MemberErrorCode;
 import xyz.ncookie.stargazer.domain.member.exception.MemberException;
@@ -24,6 +25,16 @@ public class MemberService {
 		Member member = getMemberById(memberId);
 		return MemberInfoResponse.from(member);
 	}
+
+	public MemberValidationResponse validateEmailDuplicated(String email) {
+
+		if (memberRepository.existsByEmail(email)) {
+			return new MemberValidationResponse(false);
+		}
+
+		return new MemberValidationResponse(true);
+	}
+
 
 	public Member getMemberById(Long memberId) {
 
