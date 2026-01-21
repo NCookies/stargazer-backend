@@ -79,7 +79,7 @@ weather:
 
 gemini:
     api:
-        key: ${LLM_API_KEY}
+        key: ${GEMINI_API_KEY}
 
 client:
     redirect-base-url: ${CLIENT_REDIRECT_BASE_URL}

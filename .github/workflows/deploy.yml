@@ -71,6 +71,15 @@ jobs:
                         -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
                         -e WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }} \
                         -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
+                        -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+                        -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+                        -e KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }} \
+                        -e KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }} \
+                        -e NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }} \
+                        -e NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }} \
+                        -e SERVER_BASE_URL=${{ secrets.SERVER_BASE_URL }} \
+                        -e JWT_KEY=${{ secrets.JWT_KEY }} \
+                        -e CLIENT_REDIRECT_BASE_URL=${{ secrets.CLIENT_REDIRECT_BASE_URL }} \
                         ${{ env.IMAGE_NAME }}
                       
                       # 미사용 이미지 정리 (공간 확보)
