@@ -75,6 +75,32 @@ resource "aws_security_group" "db_sg" {
   }
 }
 
+# 4-1. 기본 VPC의 서브넷 정보 가져오기 (ElastiCache용)
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+# 4-2. [보안그룹] ElastiCache용 (오직 EC2에서만 접속 가능하게 설정)
+resource "aws_security_group" "redis_sg" {
+  name        = "stargazer-redis-sg"
+  description = "Allow Redis access only from Web Server"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = 6379
+    to_port         = 6379
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id] # EC2에서만 접근 가능
+  }
+
+  tags = {
+    Name = "Stargazer-Redis-SG"
+  }
+}
+
 # 5. [EC2] 웹 서버 인스턴스 (프리티어: t3.micro)
 resource "aws_instance" "web_server" {
   ami           = data.aws_ami.ubuntu.id
@@ -108,5 +134,37 @@ resource "aws_db_instance" "database" {
 
   tags = {
     Name = "Stargazer-Database"
+  }
+}
+
+# 7. [ElastiCache 서브넷 그룹] Redis용
+resource "aws_elasticache_subnet_group" "redis_subnet_group" {
+  name       = "stargazer-redis-subnet-group"
+  subnet_ids = data.aws_subnets.default.ids
+
+  tags = {
+    Name = "Stargazer-Redis-Subnet-Group"
+  }
+}
+
+# 8. [ElastiCache] Redis 클러스터 (프리티어: cache.t3.micro)
+resource "aws_elasticache_replication_group" "redis" {
+  replication_group_id       = "stargazer-redis"
+  description              = "Redis cluster for Stargazer application"
+  engine                   = "redis"
+  engine_version           = "7.0"
+  node_type                = "cache.t3.micro" # 프리티어 포함 인스턴스 타입 (t2.micro는 더 이상 지원 안됨)
+  port                     = 6379
+  parameter_group_name     = "default.redis7"
+  num_cache_clusters       = 1 # 프리티어는 단일 노드만 가능
+
+  subnet_group_name        = aws_elasticache_subnet_group.redis_subnet_group.name
+  security_group_ids       = [aws_security_group.redis_sg.id]
+
+  at_rest_encryption_enabled = false # 프리티어는 암호화 미지원
+  transit_encryption_enabled = false # 프리티어는 전송 암호화 미지원
+
+  tags = {
+    Name = "Stargazer-Redis"
   }
 }
