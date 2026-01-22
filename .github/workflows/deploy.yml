@@ -69,6 +69,7 @@ jobs:
                         -e RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }} \
                         -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
                         -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                        -e REDIS_ENDPOINT=${{ secrets.REDIS_ENDPOINT }} \
                         -e WEATHER_API_KEY=${{ secrets.WEATHER_API_KEY }} \
                         -e GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} \
                         -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
