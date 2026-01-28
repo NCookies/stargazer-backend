@@ -80,12 +80,19 @@ tasks.register('generateOpenApi') {
         def apiDocsUrl = "http://localhost:8080/v3/api-docs"
         def outputFile = file("${projectDir}/openapi.json")
 
+
         println "Fetching OpenAPI docs from ${apiDocsUrl}..."
+
+
         def connection = new URL(apiDocsUrl).openConnection()
         connection.setRequestProperty("Accept", "application/json")
 
-        def json = connection.inputStream.text
-        outputFile.text = json
+
+        def json = connection.inputStream.getText("UTF-8")
+        outputFile.withWriter("UTF-8") { writer ->
+            writer.write(json)
+        }
+
         println "OpenAPI JSON saved to ${outputFile.absolutePath}"
     }
 }
