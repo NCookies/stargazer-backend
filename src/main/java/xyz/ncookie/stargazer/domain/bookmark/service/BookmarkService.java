@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.bookmark.dto.request.AddBookmarkRequest;
@@ -34,7 +33,7 @@ public class BookmarkService {
 	@Transactional(readOnly = true)
 	public List<BookmarkResponse> getBookmarkList(Long memberId) {
 
-		return bookmarkRepository.findAllByMember_IdAndIsDeletedFalse(memberId)
+		return bookmarkRepository.findAllByMember_Id(memberId)
 			.stream()
 			.map(BookmarkResponse::from)
 			.toList();
@@ -82,7 +81,7 @@ public class BookmarkService {
 
 		validateBookmarkOwner(memberId, bookmark);
 
-		bookmark.setDeleted();
+		bookmarkRepository.delete(bookmark);
 	}
 
 	private Bookmark getBookmarkById(Long bookmarkId) {

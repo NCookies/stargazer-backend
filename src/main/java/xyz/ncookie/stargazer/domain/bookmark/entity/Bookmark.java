@@ -49,9 +49,6 @@ public class Bookmark {
 	private Double longitude;
 	private String address;
 
-	@Column(nullable = false)
-	private boolean isDeleted;
-
 	@Builder
 	public Bookmark(Member member, BookmarkType type, ObservationSpot spot, String customName, Double latitude, Double longitude, String address) {
 
@@ -79,10 +76,6 @@ public class Bookmark {
 	public void updateBookmarkCustomName(String name) {
 
 		this.customName = name;
-	}
-
-	public void setDeleted() {
-		this.isDeleted = true;
 	}
 
 	private Long getMemberId() {
