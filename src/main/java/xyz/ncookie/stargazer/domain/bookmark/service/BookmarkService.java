@@ -2,6 +2,7 @@ package xyz.ncookie.stargazer.domain.bookmark.service;
 
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,17 +48,23 @@ public class BookmarkService {
 			? spotService.getObservationSpotById(request.spotId())
 			: null;
 
-		Bookmark savedBookmark = bookmarkRepository.save(
-			Bookmark.builder()
-				.member(member)
-				.type(request.type())
-				.spot(spot)
-				.customName(request.name())
-				.latitude(request.latitude())
-				.longitude(request.longitude())
-				.address(request.address())
-				.build()
-		);
+		Bookmark newBookmark = Bookmark.builder()
+			.member(member)
+			.type(request.type())
+			.spot(spot)
+			.customName(request.name())
+			.latitude(request.latitude())
+			.longitude(request.longitude())
+			.address(request.address())
+			.build();
+
+		Bookmark savedBookmark;
+
+		try {
+			savedBookmark = bookmarkRepository.save(newBookmark);
+		} catch (DataIntegrityViolationException e) {
+			throw new BookmarkException(BookmarkErrorCode.ALREADY_BOOKMARKED, "spotId=" + request.spotId());
+		}
 
 		return BookmarkResponse.from(savedBookmark);
 	}
