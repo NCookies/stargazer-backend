@@ -1,7 +1,7 @@
 language: "ko"
 
 reviews:
-    profile: "balanced"
+    profile: "Chill"
 
     auto_review:
         enabled: true
