@@ -52,8 +52,11 @@ public class Bookmark {
 	private Double longitude;
 	private String address;
 
+	@Column(length = 500, nullable = true)
+	private String memo;
+
 	@Builder
-	public Bookmark(Member member, BookmarkType type, ObservationSpot spot, String customName, Double latitude, Double longitude, String address) {
+	public Bookmark(Member member, BookmarkType type, ObservationSpot spot, String customName, Double latitude, Double longitude, String address, String memo) {
 
 		if (type == BookmarkType.SPOT && spot == null) {
 			throw new BookmarkException(BookmarkErrorCode.INVALID_BOOKMARK_TYPE, "SPOT 타입은 spot 정보가 필수입니다.");
@@ -69,6 +72,7 @@ public class Bookmark {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.address = address;
+		this.memo = memo;
 	}
 
 	public boolean isOwner(Long memberId) {
@@ -76,9 +80,9 @@ public class Bookmark {
 		return Objects.equals(getMemberId(), memberId);
 	}
 
-	public void updateBookmarkCustomName(String name) {
-
+	public void updateBookmark(String name, String memo) {
 		this.customName = name;
+		this.memo = memo;
 	}
 
 	private Long getMemberId() {

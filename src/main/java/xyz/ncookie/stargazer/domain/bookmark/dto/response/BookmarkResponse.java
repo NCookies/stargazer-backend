@@ -2,17 +2,19 @@ package xyz.ncookie.stargazer.domain.bookmark.dto.response;
 
 import lombok.Builder;
 import xyz.ncookie.stargazer.domain.bookmark.entity.Bookmark;
+import xyz.ncookie.stargazer.domain.bookmark.entity.BookmarkType;
 import xyz.ncookie.stargazer.domain.spot.entity.ObservationSpot;
 
 @Builder
 public record BookmarkResponse(
 	Long bookmarkId,
+	String type,
 	Long spotId,
 	String name,
 	Double latitude,
 	Double longitude,
 	String address,
-	String type
+	String memo
 ) {
 
 	public static BookmarkResponse from(Bookmark bookmark) {
@@ -23,22 +25,24 @@ public record BookmarkResponse(
 
 			return BookmarkResponse.builder()
 				.bookmarkId(bookmark.getId())
+				.type(BookmarkType.SPOT.name())
 				.spotId(spot.getId())
 				.name(bookmark.getCustomName())
 				.latitude(spot.getLatitude())
 				.longitude(spot.getLongitude())
 				.address(spot.getAddress())
-				.type("SPOT")
+				.memo(bookmark.getMemo())
 				.build();
 		} else {
 			// 커스텀 정보 반환
 			return BookmarkResponse.builder()
 				.bookmarkId(bookmark.getId())
+				.type(BookmarkType.CUSTOM.name())
 				.name(bookmark.getCustomName())
 				.latitude(bookmark.getLatitude())
 				.longitude(bookmark.getLongitude())
 				.address(bookmark.getAddress())
-				.type("CUSTOM")
+				.memo(bookmark.getMemo())
 				.build();
 		}
 	}

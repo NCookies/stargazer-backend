@@ -56,6 +56,7 @@ public class BookmarkService {
 			.latitude(request.latitude())
 			.longitude(request.longitude())
 			.address(request.address())
+			.memo(request.memo())
 			.build();
 
 		Bookmark savedBookmark;
@@ -73,10 +74,9 @@ public class BookmarkService {
 	public BookmarkResponse modifyBookmark(Long memberId, Long bookmarkId, ModifyBookmarkRequest request) {
 
 		Bookmark bookmark = getBookmarkById(bookmarkId);
-
 		validateBookmarkOwner(memberId, bookmark);
 
-		bookmark.updateBookmarkCustomName(request.name());
+		bookmark.updateBookmark(request.name(), request.memo());
 
 		return BookmarkResponse.from(bookmark);
 	}
