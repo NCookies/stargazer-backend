@@ -10,5 +10,5 @@ import xyz.ncookie.stargazer.domain.bookmark.entity.Bookmark;
 @Repository
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
-	List<Bookmark> findAllByMember_Id(Long memberId);
+	List<Bookmark> findAllByMember_IdAndIsDeletedFalse(Long memberId);
 }

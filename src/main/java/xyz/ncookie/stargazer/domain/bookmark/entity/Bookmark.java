@@ -1,5 +1,7 @@
 package xyz.ncookie.stargazer.domain.bookmark.entity;
 
+import java.util.Objects;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -47,6 +49,9 @@ public class Bookmark {
 	private Double longitude;
 	private String address;
 
+	@Column(nullable = false)
+	private boolean isDeleted;
+
 	@Builder
 	public Bookmark(Member member, BookmarkType type, ObservationSpot spot, String customName, Double latitude, Double longitude, String address) {
 
@@ -64,5 +69,24 @@ public class Bookmark {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.address = address;
+	}
+
+	public boolean isOwner(Long memberId) {
+
+		return Objects.equals(getMemberId(), memberId);
+	}
+
+	public void updateBookmarkCustomName(String name) {
+
+		this.customName = name;
+	}
+
+	public void setDeleted() {
+		this.isDeleted = true;
+	}
+
+	private Long getMemberId() {
+
+		return this.member.getId();
 	}
 }
