@@ -1,6 +1,7 @@
 ### Custom ###
 .env
 db
+openapi.json
 
 HELP.md
 .gradle
