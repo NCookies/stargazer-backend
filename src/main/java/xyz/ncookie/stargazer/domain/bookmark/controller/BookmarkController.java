@@ -106,17 +106,9 @@ public class BookmarkController {
 		@Valid @RequestBody AddBookmarkRequest request
 	) {
 
-		AddBookmarkCommand command = new AddBookmarkCommand(
-			principal.getMemberId(),
-			request.type(),
-			request.spotId(),
-			request.name(),
-			request.latitude(),
-			request.longitude(),
-			request.address(),
-			request.memo()
+		return bookmarkApplicationService.create(
+			AddBookmarkCommand.from(principal.getMemberId(), request)
 		);
-		return bookmarkApplicationService.create(command);
 	}
 
 	@Operation(
@@ -159,11 +151,11 @@ public class BookmarkController {
 		@Valid @RequestBody ModifyBookmarkRequest request
 	) {
 
-		ModifyBookmarkCommand command = new ModifyBookmarkCommand(
-			request.name(),
-			request.memo()
+		return bookmarkApplicationService.updateName(
+			principal.getMemberId(),
+			bookmarkId,
+			ModifyBookmarkCommand.from(request)
 		);
-		return bookmarkApplicationService.updateName(principal.getMemberId(), bookmarkId, command);
 	}
 
 	@Operation(
