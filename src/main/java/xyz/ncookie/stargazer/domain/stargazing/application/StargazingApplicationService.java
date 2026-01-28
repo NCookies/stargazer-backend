@@ -1,4 +1,4 @@
-package xyz.ncookie.stargazer.domain.stargazing.service;
+package xyz.ncookie.stargazer.domain.stargazing.application;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -11,63 +11,54 @@ import java.util.Map;
 
 import org.shredzone.commons.suncalc.SunPosition;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import xyz.ncookie.stargazer.domain.stargazing.client.gemini.GeminiAnalysisClient;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherForecastResponse;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherMapClient;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherResponse;
-import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastResponse;
+import xyz.ncookie.stargazer.domain.stargazing.domain.StargazingDomainService;
+import xyz.ncookie.stargazer.domain.stargazing.dto.mapper.OpenWeatherResponseMapper;
 import xyz.ncookie.stargazer.domain.stargazing.dto.request.StargazingRequest;
 import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingAnalyzeResponse;
-import xyz.ncookie.stargazer.domain.stargazing.dto.mapper.OpenWeatherResponseMapper;
-import xyz.ncookie.stargazer.domain.stargazing.engine.StargazingScoringEngine;
-import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
-import xyz.ncookie.stargazer.domain.stargazing.provider.WeatherDataProvider;
-import xyz.ncookie.stargazer.domain.stargazing.model.GeminiAnalysisResult;
+import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastResponse;
 import xyz.ncookie.stargazer.domain.stargazing.enums.BortleGrade;
 import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
-import xyz.ncookie.stargazer.domain.stargazing.model.StarAnalysisResult;
 import xyz.ncookie.stargazer.domain.stargazing.enums.VisibilityGrade;
+import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
+import xyz.ncookie.stargazer.domain.stargazing.model.StarAnalysisResult;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class StargazingService {
+public class StargazingApplicationService {
 
-	private final GeminiAnalysisClient geminiAnalysisClient;
+	private final StargazingDomainService stargazingDomainService;
 	private final OpenWeatherMapClient weatherMapClient;
-
-	private final WeatherDataProvider weatherDataProvider;
-	private final StargazingScoringEngine scoringEngine;
-
 	private final OpenWeatherResponseMapper openWeatherResponseMapper;
 
 	/**
 	 * 특정 시점(현재 또는 미래)의 관측 적합도 상세 분석
 	 */
-	public StargazingAnalyzeResponse getAnalyze(StargazingRequest request) {
+	@Transactional(readOnly = true)
+	public StargazingAnalyzeResponse analyze(StargazingRequest request) {
+
 		log.info("Analyzing stargazing request {}", request);
 
-		// 파싱
 		ZonedDateTime targetDateTime = ZonedDateTime.of(
 			request.date(),
 			request.time(),
 			ZoneId.of("Asia/Seoul")
 		);
-		// ZonedDateTime targetDateTime = ZonedDateTime.of(
-		// 	LocalDate.parse("2025-12-20"),
-		// 	LocalTime.parse("21:00"),
-		// 	ZoneId.of("Asia/Seoul")
-		// );
 
-		// 외부 데이터 수집
-		OpenWeatherResponse weatherData = weatherDataProvider.fetchWeatherData(request.lat(), request.lon(), targetDateTime);
+		OpenWeatherResponse weatherData = stargazingDomainService.fetchWeatherData(
+			request.lat(), request.lon(), targetDateTime);
 
-		StarAnalysisResult result = scoringEngine.calculateScore(request.lat(), request.lon(), targetDateTime, weatherData);
+		StarAnalysisResult result = stargazingDomainService.calculateScore(
+			request.lat(), request.lon(), targetDateTime, weatherData);
 
-		GeminiAnalysisResult aiResult = geminiAnalysisClient.getAnalysis(
+		var aiResult = stargazingDomainService.getAnalysis(
 			result.score(),
 			result.reasons(),
 			request.lat(),
@@ -106,6 +97,7 @@ public class StargazingService {
 	/**
 	 * 주간 예보 조회 (5일 / 3시간 간격)
 	 */
+	@Transactional(readOnly = true)
 	public StargazingForecastResponse getForecast(double lat, double lon) {
 
 		Map<String, List<StargazingForecastResponse.HourlyForecast>> groupedData = new LinkedHashMap<>();
@@ -122,13 +114,12 @@ public class StargazingService {
 				java.time.Instant.ofEpochSecond(item.dt()), ZoneId.of("Asia/Seoul")
 			);
 
-			// 태양 고도 체크
 			SunPosition sunPos = SunPosition.compute().at(lat, lon).on(itemTime).execute();
-			if (sunPos.getAltitude() > -6.0) continue; // 낮이면 스킵
+			if (sunPos.getAltitude() > -6.0) continue;
 
 			OpenWeatherResponse weatherResponse = openWeatherResponseMapper.toWeatherResponse(item);
 
-			StarAnalysisResult result = scoringEngine.calculateScore(lat, lon, itemTime, weatherResponse);
+			StarAnalysisResult result = stargazingDomainService.calculateScore(lat, lon, itemTime, weatherResponse);
 
 			String dateKey = itemTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 			dailyAstroMap.putIfAbsent(dateKey, result.astro());
@@ -142,7 +133,6 @@ public class StargazingService {
 				MoonPhase.calculate(result.astro().moonPhaseDegree()).name()
 			);
 
-			// 날짜별 그룹화
 			groupedData.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(hourlyDto);
 		}
 

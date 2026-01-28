@@ -16,9 +16,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.domain.spot.application.ObservationSpotApplicationService;
 import xyz.ncookie.stargazer.domain.spot.dto.request.ObservationSpotRequest;
 import xyz.ncookie.stargazer.domain.spot.dto.response.ObservationSpotResponse;
-import xyz.ncookie.stargazer.domain.spot.service.ObservationSpotService;
 
 @Tag(name = "관측지", description = "별 관측지 조회 관련 API")
 @RestController
@@ -26,7 +26,7 @@ import xyz.ncookie.stargazer.domain.spot.service.ObservationSpotService;
 @RequiredArgsConstructor
 public class ObservationSpotController {
 
-	private final ObservationSpotService observationSpotService;
+	private final ObservationSpotApplicationService observationSpotApplicationService;
 
 	@Operation(
 		summary = "관측지 조회",
@@ -49,6 +49,6 @@ public class ObservationSpotController {
 		@Valid @ModelAttribute ObservationSpotRequest request
 	) {
 
-		return observationSpotService.getObservationSpots(request);
+		return observationSpotApplicationService.getObservationSpots(request);
 	}
 }

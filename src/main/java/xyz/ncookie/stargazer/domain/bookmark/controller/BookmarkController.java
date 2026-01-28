@@ -23,10 +23,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.domain.bookmark.application.BookmarkApplicationService;
+import xyz.ncookie.stargazer.domain.bookmark.application.dto.AddBookmarkCommand;
+import xyz.ncookie.stargazer.domain.bookmark.application.dto.ModifyBookmarkCommand;
 import xyz.ncookie.stargazer.domain.bookmark.dto.request.AddBookmarkRequest;
 import xyz.ncookie.stargazer.domain.bookmark.dto.request.ModifyBookmarkRequest;
 import xyz.ncookie.stargazer.domain.bookmark.dto.response.BookmarkResponse;
-import xyz.ncookie.stargazer.domain.bookmark.service.BookmarkService;
 import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 
 @Tag(name = "북마크", description = "북마크 관리 API - 관측지나 사용자 정의 위치를 북마크로 저장하고 관리합니다.")
@@ -35,7 +37,7 @@ import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 @RequiredArgsConstructor
 public class BookmarkController {
 
-	private final BookmarkService bookmarkService;
+	private final BookmarkApplicationService bookmarkApplicationService;
 
 	@Operation(
 		summary = "북마크 목록 조회",
@@ -61,7 +63,7 @@ public class BookmarkController {
 		@AuthenticationPrincipal MemberPrincipal principal
 	) {
 
-		return bookmarkService.getBookmarkList(principal.getMemberId());
+		return bookmarkApplicationService.getBookmarkList(principal.getMemberId());
 	}
 
 	@Operation(
@@ -104,7 +106,17 @@ public class BookmarkController {
 		@Valid @RequestBody AddBookmarkRequest request
 	) {
 
-		return bookmarkService.addBookmark(principal.getMemberId(), request);
+		AddBookmarkCommand command = new AddBookmarkCommand(
+			principal.getMemberId(),
+			request.type(),
+			request.spotId(),
+			request.name(),
+			request.latitude(),
+			request.longitude(),
+			request.address(),
+			request.memo()
+		);
+		return bookmarkApplicationService.create(command);
 	}
 
 	@Operation(
@@ -147,7 +159,11 @@ public class BookmarkController {
 		@Valid @RequestBody ModifyBookmarkRequest request
 	) {
 
-		return bookmarkService.modifyBookmark(principal.getMemberId(), bookmarkId, request);
+		ModifyBookmarkCommand command = new ModifyBookmarkCommand(
+			request.name(),
+			request.memo()
+		);
+		return bookmarkApplicationService.updateName(principal.getMemberId(), bookmarkId, command);
 	}
 
 	@Operation(
@@ -184,7 +200,7 @@ public class BookmarkController {
 		@PathVariable Long bookmarkId
 	) {
 
-		bookmarkService.removeBookmark(principal.getMemberId(), bookmarkId);
+		bookmarkApplicationService.delete(principal.getMemberId(), bookmarkId);
 
 		return ResponseEntity.ok().build();
 	}

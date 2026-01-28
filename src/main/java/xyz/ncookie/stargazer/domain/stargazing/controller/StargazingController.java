@@ -14,10 +14,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.domain.stargazing.application.StargazingApplicationService;
 import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastResponse;
 import xyz.ncookie.stargazer.domain.stargazing.dto.request.StargazingRequest;
 import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingAnalyzeResponse;
-import xyz.ncookie.stargazer.domain.stargazing.service.StargazingService;
 
 @Tag(name = "별 관측", description = "별 관측 조건 분석 및 예보 관련 API")
 @RestController
@@ -25,7 +25,7 @@ import xyz.ncookie.stargazer.domain.stargazing.service.StargazingService;
 @RequiredArgsConstructor
 public class StargazingController {
 
-	private final StargazingService stargazingService;
+	private final StargazingApplicationService stargazingApplicationService;
 
 	@Operation(
 		summary = "별 관측 조건 분석",
@@ -52,7 +52,7 @@ public class StargazingController {
 		@Valid @ModelAttribute StargazingRequest request
 	) {
 
-		return stargazingService.getAnalyze(request);
+		return stargazingApplicationService.analyze(request);
 	}
 
 	@Operation(
@@ -80,6 +80,6 @@ public class StargazingController {
 		@Valid @ModelAttribute StargazingRequest request
 	) {
 
-		return stargazingService.getForecast(request.lat(), request.lon());
+		return stargazingApplicationService.getForecast(request.lat(), request.lon());
 	}
 }

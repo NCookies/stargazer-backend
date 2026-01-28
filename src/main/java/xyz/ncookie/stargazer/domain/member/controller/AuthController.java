@@ -17,11 +17,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.domain.member.application.AuthApplicationService;
 import xyz.ncookie.stargazer.domain.member.dto.request.LoginRequest;
 import xyz.ncookie.stargazer.domain.member.dto.request.RegisterRequest;
 import xyz.ncookie.stargazer.domain.member.dto.response.AuthTokenResponse;
 import xyz.ncookie.stargazer.domain.member.dto.TokenDto;
-import xyz.ncookie.stargazer.domain.member.service.AuthService;
 import xyz.ncookie.stargazer.global.security.jwt.RefreshToken;
 import xyz.ncookie.stargazer.global.security.util.CookieUtil;
 
@@ -31,7 +31,7 @@ import xyz.ncookie.stargazer.global.security.util.CookieUtil;
 @RequiredArgsConstructor
 public class AuthController {
 
-	private final AuthService authService;
+	private final AuthApplicationService authApplicationService;
 
 	private final CookieUtil cookieUtil;
 
@@ -59,7 +59,7 @@ public class AuthController {
 		@Parameter(description = "로그인 요청 정보", required = true)
 		@RequestBody @Valid LoginRequest request
 	) {
-		TokenDto tokenDto = authService.login(request);
+		TokenDto tokenDto = authApplicationService.login(request);
 		return tokenResponse(tokenDto);
 	}
 
@@ -83,7 +83,7 @@ public class AuthController {
 		@Parameter(description = "회원가입 요청 정보", required = true)
 		@RequestBody @Valid RegisterRequest request
 	) {
-		TokenDto tokenDto = authService.register(request);
+		TokenDto tokenDto = authApplicationService.register(request);
 		return tokenResponse(tokenDto);
 	}
 
@@ -107,7 +107,7 @@ public class AuthController {
 		@Parameter(description = "리프레시 토큰 (쿠키에서 자동 추출)", required = true, hidden = true)
 		@RefreshToken String refreshToken
 	) {
-		TokenDto tokenDto = authService.reissueAccessToken(refreshToken);
+		TokenDto tokenDto = authApplicationService.reissueAccessToken(refreshToken);
 		return tokenResponse(tokenDto);
 	}
 
@@ -131,7 +131,7 @@ public class AuthController {
 		@RefreshToken String refreshToken
 	) {
 
-		authService.logout(refreshToken);
+		authApplicationService.logout(refreshToken);
 
 		ResponseCookie deleteCookie = cookieUtil.deleteRefreshTokenCookie();
 
