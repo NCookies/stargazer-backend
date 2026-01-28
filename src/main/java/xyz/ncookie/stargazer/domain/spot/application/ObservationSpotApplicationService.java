@@ -1,29 +1,29 @@
-package xyz.ncookie.stargazer.domain.spot.service;
+package xyz.ncookie.stargazer.domain.spot.application;
 
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import xyz.ncookie.stargazer.domain.spot.domain.ObservationSpotDomainService;
 import xyz.ncookie.stargazer.domain.spot.dto.request.ObservationSpotRequest;
 import xyz.ncookie.stargazer.domain.spot.dto.response.ObservationSpotResponse;
-import xyz.ncookie.stargazer.domain.spot.entity.ObservationSpot;
-import xyz.ncookie.stargazer.domain.spot.exception.ObservationSpotErrorCode;
-import xyz.ncookie.stargazer.domain.spot.exception.ObservationSpotException;
 import xyz.ncookie.stargazer.domain.spot.repository.ObservationRepository;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ObservationSpotService {
+public class ObservationSpotApplicationService {
 
+	private final ObservationSpotDomainService observationSpotDomainService;
 	private final ObservationRepository observationRepository;
 
+	@Transactional(readOnly = true)
 	public List<ObservationSpotResponse> getObservationSpots(ObservationSpotRequest request) {
 
 		if (request.lat() != null && request.lon() != null) {
-
 			double radiusKm = (request.radius() != null) ? request.radius() : 20.0;
 			double radiusMeters = radiusKm * 1000;
 
@@ -37,11 +37,5 @@ public class ObservationSpotService {
 			.stream()
 			.map(ObservationSpotResponse::from)
 			.toList();
-	}
-
-	public ObservationSpot getObservationSpotById(Long spotId) {
-
-		return observationRepository.findById(spotId)
-			.orElseThrow(() -> new ObservationSpotException(ObservationSpotErrorCode.SPOT_NOT_FOUND, spotId.toString()));
 	}
 }

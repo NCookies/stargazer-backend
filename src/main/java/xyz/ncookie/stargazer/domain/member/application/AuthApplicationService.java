@@ -1,12 +1,13 @@
-package xyz.ncookie.stargazer.domain.member.service;
+package xyz.ncookie.stargazer.domain.member.application;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import xyz.ncookie.stargazer.domain.member.domain.AuthDomainService;
+import xyz.ncookie.stargazer.domain.member.domain.MemberDomainService;
 import xyz.ncookie.stargazer.domain.member.dto.TokenDto;
 import xyz.ncookie.stargazer.domain.member.dto.request.LoginRequest;
 import xyz.ncookie.stargazer.domain.member.dto.request.RegisterRequest;
@@ -22,14 +23,15 @@ import xyz.ncookie.stargazer.global.security.redis.RefreshTokenRedisRepository;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthApplicationService {
 
 	private final RefreshTokenRedisRepository refreshTokenRedisRepository;
 	private final MemberRepository memberRepository;
-
 	private final JwtTokenProvider jwtTokenProvider;
-	private final PasswordEncoder passwordEncoder;
+	private final AuthDomainService authDomainService;
+	private final MemberDomainService memberDomainService;
 
+	@Transactional(readOnly = true)
 	public TokenDto reissueAccessToken(String refreshToken) {
 
 		if (refreshToken == null) {
@@ -54,6 +56,7 @@ public class AuthService {
 		return new TokenDto(newAccessToken, newRefreshToken);
 	}
 
+	@Transactional
 	public void logout(String refreshToken) {
 
 		if (refreshToken == null) {
@@ -61,21 +64,18 @@ public class AuthService {
 		}
 
 		refreshTokenRedisRepository.delete(refreshToken);
-
 		log.debug("로그아웃 성공!");
 	}
 
 	@Transactional
 	public TokenDto register(@Valid RegisterRequest request) {
 
-		// 이메일 중복 검사
-		if (memberRepository.existsByEmail(request.email())) {
-			// 우선은 같은 명의의 회원이라도 별개로 인식하도록 정책 설정
-			Member findMember = getMemberByEmail(request.email());
+		if (memberDomainService.isEmailDuplicated(request.email())) {
+			Member findMember = authDomainService.findByEmail(request.email());
 			throw new MemberException(MemberErrorCode.MEMBER_EMAIL_DUPLICATED, findMember.getAuthProvider().getDesc());
 		}
 
-		String encodedPassword = passwordEncoder.encode(request.password());
+		String encodedPassword = authDomainService.encodePassword(request.password());
 		Member createdMember = memberRepository.save(
 			Member.local(
 				request.email(),
@@ -93,21 +93,12 @@ public class AuthService {
 	@Transactional(readOnly = true)
 	public TokenDto login(LoginRequest request) {
 
-		Member member = getMemberByEmail(request.email());
-
-		if (!passwordEncoder.matches(request.password(), member.getPassword())) {
-			throw new MemberException(MemberErrorCode.PASSWORD_NOT_MATCH);
-		}
+		Member member = authDomainService.findByEmail(request.email());
+		authDomainService.validatePassword(request.password(), member.getPassword());
 
 		String accessToken = jwtTokenProvider.createAccessToken(member.getId());
 		String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
 		return new TokenDto(accessToken, refreshToken);
-	}
-
-	private Member getMemberByEmail(String email) {
-
-		return memberRepository.findByEmail(email)
-			.orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 	}
 }

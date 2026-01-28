@@ -15,9 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import xyz.ncookie.stargazer.domain.member.application.MemberApplicationService;
 import xyz.ncookie.stargazer.domain.member.dto.response.MemberInfoResponse;
 import xyz.ncookie.stargazer.domain.member.dto.response.MemberValidationResponse;
-import xyz.ncookie.stargazer.domain.member.service.MemberService;
 import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 
 @Tag(name = "회원", description = "회원 정보 관련 API")
@@ -26,7 +26,7 @@ import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 @RequiredArgsConstructor
 public class MemberController {
 
-	private final MemberService memberService;
+	private final MemberApplicationService memberApplicationService;
 
 	@Operation(
 		summary = "내 정보 조회",
@@ -50,7 +50,7 @@ public class MemberController {
 		@AuthenticationPrincipal MemberPrincipal principal
 	) {
 
-		return memberService.getMyInfo(principal.getMemberId());
+		return memberApplicationService.getMyInfo(principal.getMemberId());
 	}
 
 	@Operation(
@@ -74,6 +74,6 @@ public class MemberController {
 		@RequestParam(value = "email") String email
 	) {
 
-		return memberService.validateEmailDuplicated(email);
+		return memberApplicationService.validateEmailDuplicated(email);
 	}
 }
