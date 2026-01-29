@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.bookmark.entity.Bookmark;
 import xyz.ncookie.stargazer.domain.bookmark.repository.BookmarkRepository;
-import xyz.ncookie.stargazer.domain.stargazing.domain.OpenWeatherRateLimitService;
 import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkItemResponse;
 import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkResponse;
 import xyz.ncookie.stargazer.domain.recommend.model.BookmarkScore;
@@ -31,6 +30,7 @@ import xyz.ncookie.stargazer.domain.stargazing.component.AstronomyCalculator;
 import xyz.ncookie.stargazer.domain.stargazing.domain.StargazingDomainService;
 import xyz.ncookie.stargazer.domain.stargazing.dto.mapper.OpenWeatherResponseMapper;
 import xyz.ncookie.stargazer.domain.stargazing.model.HourlyForecastData;
+import xyz.ncookie.stargazer.global.exception.RateLimitExceededException;
 
 @Slf4j
 @Service
@@ -38,7 +38,6 @@ import xyz.ncookie.stargazer.domain.stargazing.model.HourlyForecastData;
 public class RecommendApplicationService {
 
 	private final StargazingDomainService stargazingDomainService;
-	private final OpenWeatherRateLimitService rateLimitService;
 
 	private final BookmarkRepository bookmarkRepository;
 	private final OpenWeatherMapClient weatherMapClient;
@@ -82,16 +81,10 @@ public class RecommendApplicationService {
 			})
 			.map(bookmark -> CompletableFuture.supplyAsync(() -> {
 				long startMs = System.currentTimeMillis();
-
-				if (!rateLimitService.tryConsume()) {
-					// 토큰 부족 시: 로그 남기고 null 반환 (Skip)
-					log.warn("Rate limit exceeded for bookmark {}. Skipped.", bookmark.getId());
-					return null;
-				}
-
 				try {
 					Double lat = bookmark.getLatitude();
 					Double lon = bookmark.getLongitude();
+					// 토큰은 OpenWeatherMapClient에서 실제 HTTP 호출 직전(캐시 미스 시)에만 소비됨
 					OpenWeatherForecastResponse forecastData = weatherMapClient.fetchForecastApi(lat, lon);
 					if (forecastData == null || forecastData.list() == null) {
 						log.warn("Failed to fetch forecast for bookmark {}", bookmark.getId());
@@ -101,6 +94,9 @@ public class RecommendApplicationService {
 					log.debug("Bookmark {} ({}): {} ms", bookmark.getId(), bookmark.getName(),
 						System.currentTimeMillis() - startMs);
 					return score;
+				} catch (RateLimitExceededException e) {
+					log.warn("Rate limit exceeded for bookmark {}. Skipped.", bookmark.getId());
+					return null;
 				} catch (Exception e) {
 					log.warn("Bookmark {} forecast error after {} ms: {}", bookmark.getId(),
 						System.currentTimeMillis() - startMs, e.getMessage());
