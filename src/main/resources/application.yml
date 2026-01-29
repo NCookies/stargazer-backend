@@ -26,9 +26,7 @@ spring:
             mode: always
 
     cache:
-        type: caffeine
-        caffeine:
-            spec: maximumSize=500, expireAfterWrite=10m # 최대 500개, 쓴 지 10분 뒤 삭제
+        type: redis
 
     data:
         redis:

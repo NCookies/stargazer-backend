@@ -1,6 +1,7 @@
 package xyz.ncookie.stargazer.domain.stargazing.client.openweather;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -40,7 +41,9 @@ public class OpenWeatherMapClient {
 	/**
 	 * OpenWeatherMap Forecast API 원본 데이터 호출
 	 * - 5일 3시간 간격의 예보 데이터
+	 * - 동일 (lat, lon) 요청은 1시간 캐시로 외부 API 호출 최소화
 	 */
+	@Cacheable(value = "weatherForecast", key = "T(java.lang.String).format('%.4f-%.4f', #lat, #lon)")
 	public OpenWeatherForecastResponse fetchForecastApi(double lat, double lon) {
 		String url = String.format(
 			"https://api.openweathermap.org/data/2.5/forecast?lat=%f&lon=%f&appid=%s&units=metric",
@@ -54,4 +57,3 @@ public class OpenWeatherMapClient {
 		}
 	}
 }
-

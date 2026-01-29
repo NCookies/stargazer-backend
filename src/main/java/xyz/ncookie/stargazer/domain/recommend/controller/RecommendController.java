@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.recommend.application.RecommendApplicationService;
 import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkResponse;
 import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
@@ -25,6 +26,7 @@ import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 @RestController
 @RequestMapping("/api/v1/recommends")
 @RequiredArgsConstructor
+@Slf4j
 public class RecommendController {
 
 	private final RecommendApplicationService recommendApplicationService;
@@ -52,9 +54,13 @@ public class RecommendController {
 		@Parameter(description = "인증된 사용자 정보 (JWT에서 자동 추출)", required = true, hidden = true)
 		@AuthenticationPrincipal MemberPrincipal principal
 	) {
+		long start = System.currentTimeMillis();
 
 		List<RecommendedBookmarkResponse> recommendations = 
 			recommendApplicationService.getTodayRecommendedBookmarks(principal.getMemberId());
+
+		long elapsed = System.currentTimeMillis() - start;
+		log.info("추천 북마크 API 응답 시간: {} ms", elapsed);
 
 		return ResponseEntity.ok(recommendations);
 	}
