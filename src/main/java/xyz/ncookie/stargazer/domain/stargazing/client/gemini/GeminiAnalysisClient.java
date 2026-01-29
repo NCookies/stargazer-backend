@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherMapClient;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherResponse;
 import xyz.ncookie.stargazer.domain.stargazing.model.GeminiAnalysisResult;
 import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
@@ -28,8 +27,6 @@ public class GeminiAnalysisClient {
 	private final RestTemplate restTemplate;
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	private final OpenWeatherMapClient openWeatherMapClient;
-
 	public GeminiAnalysisResult getAnalysis(
 		int finalScore,
 		List<String> reasons,
@@ -40,13 +37,10 @@ public class GeminiAnalysisClient {
 		int bortleClass
 	) {
 
-		String addressName = openWeatherMapClient.getAddressName(lat, lon);
-
 		String prompt = String.format("""
 			너는 천체 관측 예보 전문가야. 아래 제공된 **확정 데이터(Fact)**를 바탕으로 사용자에게 관측 조언을 해줘.
 		
 			[관측지 정보]
-			- 주소: %s
 			- **광해 등급: Bortle Class %d** (정밀 지도 데이터 기반, 1~9등급)
 			- 특징:
 			  * Class 1~4: 별이 쏟아지는 시골/산간 지역 (관측 최적)
@@ -75,7 +69,6 @@ public class GeminiAnalysisClient {
 			  "limiting_mag": "광해 등급에 따른 한계등급 추정치 (예: 6.0등급 / 4.5등급 / 3.0등급)"
 			}
 			""",
-			addressName,            // 주소
 			bortleClass,             // 광해 등급 (CSV 값)
 			finalScore,
 			reasons,
