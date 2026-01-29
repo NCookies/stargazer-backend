@@ -3,7 +3,7 @@ package xyz.ncookie.stargazer.domain.recommend.model;
 import java.util.List;
 
 import xyz.ncookie.stargazer.domain.bookmark.entity.Bookmark;
-import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkResponse;
+import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkItemResponse;
 
 /**
  * 북마크와 관측 점수 정보를 담는 도메인 모델
@@ -22,8 +22,8 @@ public record BookmarkScore(
 	/**
 	 * BookmarkScore를 Response DTO로 변환
 	 */
-	public RecommendedBookmarkResponse toResponse() {
-		return new RecommendedBookmarkResponse(
+	public RecommendedBookmarkItemResponse toResponse() {
+		return new RecommendedBookmarkItemResponse(
 			bookmark.getId(),
 			bookmark.getName(),
 			bookmark.getLatitude(),

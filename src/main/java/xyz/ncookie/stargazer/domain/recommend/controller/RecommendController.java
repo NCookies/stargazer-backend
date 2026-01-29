@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.recommend.application.RecommendApplicationService;
+import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkItemResponse;
 import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkResponse;
 import xyz.ncookie.stargazer.global.security.principal.MemberPrincipal;
 
@@ -43,7 +44,7 @@ public class RecommendController {
 		@ApiResponse(
 			responseCode = "200",
 			description = "조회 성공",
-			content = @Content(schema = @Schema(implementation = RecommendedBookmarkResponse.class))
+			content = @Content(schema = @Schema(implementation = RecommendedBookmarkItemResponse.class))
 		),
 		@ApiResponse(
 			responseCode = "401",
@@ -52,20 +53,18 @@ public class RecommendController {
 	})
 	@SecurityRequirement(name = "bearer-jwt")
 	@GetMapping("/bookmarks/today")
-	public ResponseEntity<List<RecommendedBookmarkResponse>> getTodayRecommendedBookmarks(
+	public RecommendedBookmarkResponse getTodayRecommendedBookmarks(
 		@Parameter(description = "인증된 사용자 정보 (JWT에서 자동 추출)", required = true, hidden = true)
 		@AuthenticationPrincipal MemberPrincipal principal
 	) {
 		long start = System.currentTimeMillis();
 
-		List<RecommendedBookmarkResponse> recommendations =
+		RecommendedBookmarkResponse recommendations =
 			recommendApplicationService.getTodayRecommendedBookmarks(principal.getMemberId());
 
 		long elapsed = System.currentTimeMillis() - start;
 		log.info("추천 북마크 API 응답 시간: {} ms", elapsed);
 
-		return ResponseEntity.ok()
-			.header("X-Load-Time-Hint", "first-request-may-take-10-15s")
-			.body(recommendations);
+		return recommendations;
 	}
 }

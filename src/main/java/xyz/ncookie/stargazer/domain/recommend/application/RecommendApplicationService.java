@@ -7,9 +7,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 import org.shredzone.commons.suncalc.SunPosition;
 import org.shredzone.commons.suncalc.SunTimes;
@@ -21,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.bookmark.entity.Bookmark;
 import xyz.ncookie.stargazer.domain.bookmark.repository.BookmarkRepository;
+import xyz.ncookie.stargazer.domain.stargazing.domain.OpenWeatherRateLimitService;
+import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkItemResponse;
 import xyz.ncookie.stargazer.domain.recommend.dto.response.RecommendedBookmarkResponse;
 import xyz.ncookie.stargazer.domain.recommend.model.BookmarkScore;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherForecastResponse;
@@ -35,9 +37,11 @@ import xyz.ncookie.stargazer.domain.stargazing.model.HourlyForecastData;
 @RequiredArgsConstructor
 public class RecommendApplicationService {
 
+	private final StargazingDomainService stargazingDomainService;
+	private final OpenWeatherRateLimitService rateLimitService;
+
 	private final BookmarkRepository bookmarkRepository;
 	private final OpenWeatherMapClient weatherMapClient;
-	private final StargazingDomainService stargazingDomainService;
 	private final OpenWeatherResponseMapper openWeatherResponseMapper;
 	private final AstronomyCalculator astronomyCalculator;
 
@@ -52,14 +56,15 @@ public class RecommendApplicationService {
 	 * 오늘 관측이 적합한 북마크 장소 TOP 5 추천
 	 */
 	@Transactional(readOnly = true)
-	public List<RecommendedBookmarkResponse> getTodayRecommendedBookmarks(Long memberId) {
+	public RecommendedBookmarkResponse getTodayRecommendedBookmarks(Long memberId) {
 
 		log.info("오늘의 추천 북마크 조회 시작! memberId={}", memberId);
 
 		List<Bookmark> bookmarks = bookmarkRepository.findAllByMember_Id(memberId);
+		int totalCount = bookmarks.size();
 
 		if (bookmarks.isEmpty()) {
-			return List.of();
+			return new RecommendedBookmarkResponse(null, 0, 0, false);
 		}
 
 		ZonedDateTime now = ZonedDateTime.now(SEOUL_ZONE);
@@ -77,6 +82,13 @@ public class RecommendApplicationService {
 			})
 			.map(bookmark -> CompletableFuture.supplyAsync(() -> {
 				long startMs = System.currentTimeMillis();
+
+				if (!rateLimitService.tryConsume()) {
+					// 토큰 부족 시: 로그 남기고 null 반환 (Skip)
+					log.warn("Rate limit exceeded for bookmark {}. Skipped.", bookmark.getId());
+					return null;
+				}
+
 				try {
 					Double lat = bookmark.getLatitude();
 					Double lon = bookmark.getLongitude();
@@ -99,15 +111,25 @@ public class RecommendApplicationService {
 
 		List<BookmarkScore> bookmarkScores = futures.stream()
 			.map(CompletableFuture::join)
-			.filter(score -> score != null)
+			.filter(Objects::nonNull)
 			.toList();
 
 		// 점수 기준으로 정렬하여 TOP 5 추출
-		return bookmarkScores.stream()
+		List<RecommendedBookmarkItemResponse> recommend = bookmarkScores.stream()
 			.sorted(Comparator.comparing(BookmarkScore::score).reversed())
 			.limit(RECOMMEND_COUNT)
 			.map(BookmarkScore::toResponse)
-			.collect(Collectors.toList());
+			.toList();
+
+		int analyzedCount = bookmarkScores.size();
+		boolean isPartial = analyzedCount < totalCount;
+
+		return new RecommendedBookmarkResponse(
+			recommend,
+			totalCount,
+			analyzedCount,
+			isPartial
+		);
 	}
 
 	/**

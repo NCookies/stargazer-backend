@@ -56,6 +56,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // Rate limiting
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
+
     // Stargazing
     implementation 'org.shredzone.commons:commons-suncalc:3.7'
 
