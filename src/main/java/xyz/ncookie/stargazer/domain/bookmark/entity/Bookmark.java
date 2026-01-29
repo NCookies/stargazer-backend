@@ -85,6 +85,39 @@ public class Bookmark {
 		this.memo = memo;
 	}
 
+	/**
+	 * 북마크의 이름 반환
+	 * SPOT 타입: customName이 있으면 customName, 없으면 spot의 title
+	 * CUSTOM 타입: customName
+	 */
+	public String getName() {
+		if (spot != null) {
+			return customName != null ? customName : spot.getTitle();
+		}
+		return customName;
+	}
+
+	public Double getLatitude() {
+		if (spot != null) {
+			return spot.getLatitude();
+		}
+		return latitude;
+	}
+
+	public Double getLongitude() {
+		if (spot != null) {
+			return spot.getLongitude();
+		}
+		return longitude;
+	}
+
+	public String getAddress() {
+		if (spot != null) {
+			return spot.getAddress();
+		}
+		return address;
+	}
+
 	private Long getMemberId() {
 
 		return this.member.getId();

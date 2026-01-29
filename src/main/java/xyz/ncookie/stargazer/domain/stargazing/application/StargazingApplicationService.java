@@ -26,6 +26,7 @@ import xyz.ncookie.stargazer.domain.stargazing.dto.response.StargazingForecastRe
 import xyz.ncookie.stargazer.domain.stargazing.enums.BortleGrade;
 import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
 import xyz.ncookie.stargazer.domain.stargazing.enums.VisibilityGrade;
+import xyz.ncookie.stargazer.domain.stargazing.model.HourlyForecastData;
 import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
 import xyz.ncookie.stargazer.domain.stargazing.model.StarAnalysisResult;
 
@@ -114,23 +115,27 @@ public class StargazingApplicationService {
 				java.time.Instant.ofEpochSecond(item.dt()), ZoneId.of("Asia/Seoul")
 			);
 
+			// -6도 이하(천문학적 황혼 이하)인 시간대만 계산
 			SunPosition sunPos = SunPosition.compute().at(lat, lon).on(itemTime).execute();
 			if (sunPos.getAltitude() > -6.0) continue;
 
 			OpenWeatherResponse weatherResponse = openWeatherResponseMapper.toWeatherResponse(item);
 
-			StarAnalysisResult result = stargazingDomainService.calculateScore(lat, lon, itemTime, weatherResponse);
+			HourlyForecastData forecastData = stargazingDomainService.calculateHourlyForecast(
+				lat, lon, itemTime, weatherResponse
+			);
 
+			// 천문 데이터는 날짜별로 한 번만 저장 (일출/일몰 정보용)
 			String dateKey = itemTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-			dailyAstroMap.putIfAbsent(dateKey, result.astro());
+			dailyAstroMap.putIfAbsent(dateKey, forecastData.astro());
 
 			StargazingForecastResponse.HourlyForecast hourlyDto = new StargazingForecastResponse.HourlyForecast(
-				itemTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-				result.score(),
-				result.reasons(),
-				String.format("%.1f등급", 6.0 - (item.clouds().all() / 20.0)),
-				item.clouds().all(),
-				MoonPhase.calculate(result.astro().moonPhaseDegree()).name()
+				forecastData.dateTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+				forecastData.score(),
+				forecastData.reasons(),
+				forecastData.starGrade(),
+				forecastData.cloudCover(),
+				forecastData.moonPhase()
 			);
 
 			groupedData.computeIfAbsent(dateKey, k -> new ArrayList<>()).add(hourlyDto);

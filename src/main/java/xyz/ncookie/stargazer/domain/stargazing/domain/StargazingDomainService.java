@@ -5,11 +5,10 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xyz.ncookie.stargazer.domain.stargazing.client.gemini.GeminiAnalysisClient;
-import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherForecastResponse;
-import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherMapClient;
 import xyz.ncookie.stargazer.domain.stargazing.client.openweather.OpenWeatherResponse;
-import xyz.ncookie.stargazer.domain.stargazing.dto.mapper.OpenWeatherResponseMapper;
 import xyz.ncookie.stargazer.domain.stargazing.engine.StargazingScoringEngine;
+import xyz.ncookie.stargazer.domain.stargazing.enums.MoonPhase;
+import xyz.ncookie.stargazer.domain.stargazing.model.HourlyForecastData;
 import xyz.ncookie.stargazer.domain.stargazing.model.RawAstronomyData;
 import xyz.ncookie.stargazer.domain.stargazing.provider.WeatherDataProvider;
 import xyz.ncookie.stargazer.domain.stargazing.model.GeminiAnalysisResult;
@@ -33,6 +32,28 @@ public class StargazingDomainService {
 
 	public StarAnalysisResult calculateScore(double lat, double lon, ZonedDateTime targetDateTime, OpenWeatherResponse weatherData) {
 		return scoringEngine.calculateScore(lat, lon, targetDateTime, weatherData);
+	}
+
+	public HourlyForecastData calculateHourlyForecast(
+		double lat,
+		double lon,
+		ZonedDateTime dateTime,
+		OpenWeatherResponse weatherData
+	) {
+
+		StarAnalysisResult result = calculateScore(lat, lon, dateTime, weatherData);
+
+		String starGrade = String.format("%.1f등급", 6.0 - (weatherData.clouds().all() / 20.0));
+
+		return new HourlyForecastData(
+			dateTime,
+			result.score(),
+			result.reasons(),
+			starGrade,
+			weatherData.clouds().all(),
+			MoonPhase.calculate(result.astro().moonPhaseDegree()).name(),
+			result.astro()
+		);
 	}
 
 	public GeminiAnalysisResult getAnalysis(
