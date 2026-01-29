@@ -1,14 +1,11 @@
 package xyz.ncookie.stargazer.domain.stargazing.component;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.shredzone.commons.suncalc.MoonIllumination;
-import org.shredzone.commons.suncalc.MoonPhase;
 import org.shredzone.commons.suncalc.MoonPosition;
 import org.shredzone.commons.suncalc.MoonTimes;
-import org.shredzone.commons.suncalc.SunPosition;
 import org.shredzone.commons.suncalc.SunTimes;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +44,17 @@ public class AstronomyCalculator {
 			moonrise,
 			moonset
 		);
+	}
+
+	/**
+	 * 특정 날짜의 일출/일몰 시간을 ZonedDateTime으로 반환
+	 * @param lat 위도
+	 * @param lon 경도
+	 * @param date 계산할 날짜
+	 * @return 일출/일몰 시간 (SunTimes 객체)
+	 */
+	public SunTimes calculateSunTimes(double lat, double lon, ZonedDateTime date) {
+		return SunTimes.compute().on(date).at(lat, lon).execute();
 	}
 
 	private String formatTime(ZonedDateTime time) {
