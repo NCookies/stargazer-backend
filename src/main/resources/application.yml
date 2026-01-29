@@ -99,3 +99,7 @@ springdoc:
         operations-sorter: alpha
         try-it-out-enabled: true
         filter: true
+
+logging:
+    level:
+        xyz.ncookie.stargazer.domain.recommend: DEBUG

@@ -5,13 +5,15 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import org.shredzone.commons.suncalc.SunPosition;
 import org.shredzone.commons.suncalc.SunTimes;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,9 @@ public class RecommendApplicationService {
 	private final OpenWeatherResponseMapper openWeatherResponseMapper;
 	private final AstronomyCalculator astronomyCalculator;
 
+	@Qualifier("recommendTaskExecutor")
+	private final Executor recommendTaskExecutor;
+
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 	private static final int RECOMMEND_COUNT = 5;
@@ -61,31 +66,41 @@ public class RecommendApplicationService {
 		LocalDate today = now.toLocalDate();
 		LocalDate tomorrow = today.plusDays(1);
 
-		List<BookmarkScore> bookmarkScores = new ArrayList<>();
+		// 북마크별로 날씨 API 호출 + 점수 계산을 병렬 수행 (데이터 누락 없이 전부 대기)
+		List<CompletableFuture<BookmarkScore>> futures = bookmarks.stream()
+			.filter(bookmark -> {
+				if (bookmark.getLatitude() == null || bookmark.getLongitude() == null) {
+					log.warn("Bookmark {} has no coordinates, skipping", bookmark.getId());
+					return false;
+				}
+				return true;
+			})
+			.map(bookmark -> CompletableFuture.supplyAsync(() -> {
+				long startMs = System.currentTimeMillis();
+				try {
+					Double lat = bookmark.getLatitude();
+					Double lon = bookmark.getLongitude();
+					OpenWeatherForecastResponse forecastData = weatherMapClient.fetchForecastApi(lat, lon);
+					if (forecastData == null || forecastData.list() == null) {
+						log.warn("Failed to fetch forecast for bookmark {}", bookmark.getId());
+						return null;
+					}
+					BookmarkScore score = calculateBestScore(bookmark, lat, lon, today, tomorrow, forecastData);
+					log.debug("Bookmark {} ({}): {} ms", bookmark.getId(), bookmark.getName(),
+						System.currentTimeMillis() - startMs);
+					return score;
+				} catch (Exception e) {
+					log.warn("Bookmark {} forecast error after {} ms: {}", bookmark.getId(),
+						System.currentTimeMillis() - startMs, e.getMessage());
+					return null;
+				}
+			}, recommendTaskExecutor))
+			.toList();
 
-		for (Bookmark bookmark : bookmarks) {
-			Double lat = bookmark.getLatitude();
-			Double lon = bookmark.getLongitude();
-
-			if (lat == null || lon == null) {
-				log.warn("Bookmark {} has no coordinates, skipping", bookmark.getId());
-				continue;
-			}
-
-			// 날씨 예보 조회
-			OpenWeatherForecastResponse forecastData = weatherMapClient.fetchForecastApi(lat, lon);
-
-			if (forecastData == null || forecastData.list() == null) {
-				log.warn("Failed to fetch forecast for bookmark {}", bookmark.getId());
-				continue;
-			}
-
-			BookmarkScore score = calculateBestScore(bookmark, lat, lon, today, tomorrow, forecastData);
-
-			if (score != null) {
-				bookmarkScores.add(score);
-			}
-		}
+		List<BookmarkScore> bookmarkScores = futures.stream()
+			.map(CompletableFuture::join)
+			.filter(score -> score != null)
+			.toList();
 
 		// 점수 기준으로 정렬하여 TOP 5 추출
 		return bookmarkScores.stream()

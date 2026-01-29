@@ -35,7 +35,9 @@ public class RecommendController {
 		summary = "오늘 관측 추천 북마크 조회",
 		description = "사용자의 북마크 목록 중 오늘 저녁부터 내일 일출 전까지의 관측 적합도를 분석하여 " +
 			"상위 5개를 추천합니다. 각 북마크의 날씨 예보를 조회하여 관측 점수를 계산합니다. " +
-			"JWT 토큰 인증이 필요합니다."
+			"JWT 토큰 인증이 필요합니다. " +
+			"**첫 조회 시** 날씨 API 호출로 **5~7초** 걸릴 수 있으므로, 클라이언트에서는 로딩 중 " +
+			"'잠시만 기다려 주세요' 등의 안내를 표시하는 것을 권장합니다. 이후 동일 지역은 캐시로 빨라집니다."
 	)
 	@ApiResponses(value = {
 		@ApiResponse(
@@ -56,12 +58,14 @@ public class RecommendController {
 	) {
 		long start = System.currentTimeMillis();
 
-		List<RecommendedBookmarkResponse> recommendations = 
+		List<RecommendedBookmarkResponse> recommendations =
 			recommendApplicationService.getTodayRecommendedBookmarks(principal.getMemberId());
 
 		long elapsed = System.currentTimeMillis() - start;
 		log.info("추천 북마크 API 응답 시간: {} ms", elapsed);
 
-		return ResponseEntity.ok(recommendations);
+		return ResponseEntity.ok()
+			.header("X-Load-Time-Hint", "first-request-may-take-10-15s")
+			.body(recommendations);
 	}
 }
