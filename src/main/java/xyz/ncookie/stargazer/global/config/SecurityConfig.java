@@ -98,7 +98,9 @@ public class SecurityConfig {
 
 		config.setAllowedOrigins(List.of(
 			"http://localhost:3000",
-			"https://www.byeolbolil.xyz"
+			"http://localhost:8080",      // 로컬 Swagger
+			"https://www.byeolbolil.xyz",
+			"https://api.byeolbolil.xyz"  // 프로덕션 Swagger
 		));
 
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
