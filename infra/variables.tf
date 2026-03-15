@@ -14,3 +14,10 @@ variable "key_pair_name" {
   description = "EC2 접속에 사용할 키페어 이름 (AWS 콘솔에서 미리 생성 필요)"
   type        = string
 }
+
+variable "alert_webhook_url" {
+  description = "Discord 또는 Slack Incoming Webhook URL (알람 전송)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
