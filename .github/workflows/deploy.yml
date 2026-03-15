@@ -62,10 +62,14 @@ jobs:
                       docker stop stargazer-app || true
                       docker rm stargazer-app || true
                       
-                      # 새 컨테이너 실행 (환경변수 주입!)
+                      # 앱 로그 디렉터리 (CloudWatch Agent 수집용)
+                      mkdir -p /home/ubuntu/app-logs
+                      
+                      # 새 컨테이너 실행 (환경변수 주입, 로그 볼륨 마운트)
                       docker run -d \
                         --name stargazer-app \
                         -p 8080:8080 \
+                        -v /home/ubuntu/app-logs:/app/logs \
                         -e RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }} \
                         -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
                         -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \

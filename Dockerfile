@@ -1,6 +1,8 @@
 FROM amazoncorretto:17
 WORKDIR /app
 
+RUN mkdir -p /app/logs
+
 COPY build/libs/*SNAPSHOT.jar app.jar
 
 # prod 프로필 활성화
