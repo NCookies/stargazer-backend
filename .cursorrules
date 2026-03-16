@@ -1,0 +1,9 @@
+All responses must be written in Korean.
+All git commit messages must be written in Korean.
+Use conventional commit format.
+
+Examples:
+feat: 로그인 API 추가
+fix: JWT 토큰 만료 오류 수정
+refactor: UserService 로직 분리
+docs: 문서 수정
