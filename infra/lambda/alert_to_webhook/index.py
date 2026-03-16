@@ -89,7 +89,9 @@ def lambda_handler(event, context):
             body = handle_eventbridge(event["detail"], event.get("detail-type", ""))
             post_webhook(body)
         else:
-            post_webhook({"text": f"Unknown event: {json.dumps(event)[:500]}"})
+            msg = f"Unknown event: {json.dumps(event)[:500]}"
+            body = {"content": msg} if is_discord_style() else {"text": msg}
+            post_webhook(body)
     except (HTTPError, URLError) as e:
         retryable = _is_retryable_error(e)
         details = {"exception": type(e).__name__, "repr": repr(e)}
