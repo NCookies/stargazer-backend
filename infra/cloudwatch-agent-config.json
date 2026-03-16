@@ -1,0 +1,50 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "root"
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "metrics_collected": {
+      "cpu": {
+        "measurement": ["cpu_usage_idle", "cpu_usage_user", "cpu_usage_system"],
+        "metrics_collection_interval": 60
+      },
+      "mem": {
+        "measurement": ["mem_used_percent", "mem_available"],
+        "metrics_collection_interval": 60
+      },
+      "disk": {
+        "measurement": ["disk_used_percent"],
+        "metrics_collection_interval": 60,
+        "resources": ["/"]
+      }
+    },
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/home/ubuntu/app-logs/application.log",
+            "log_group_name": "/stargazer/app",
+            "log_stream_name": "{instance_id}/app"
+          },
+          {
+            "file_path": "/var/log/nginx/access.log",
+            "log_group_name": "/stargazer/nginx",
+            "log_stream_name": "{instance_id}/nginx-access"
+          },
+          {
+            "file_path": "/var/log/nginx/error.log",
+            "log_group_name": "/stargazer/nginx",
+            "log_stream_name": "{instance_id}/nginx-error"
+          }
+        ]
+      }
+    }
+  }
+}

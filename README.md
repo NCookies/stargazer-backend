@@ -129,6 +129,7 @@ GEMINI_API_KEY=your_google_gemini_key
 | [docs/SECURITY_AUTH_GUIDE.md](docs/SECURITY_AUTH_GUIDE.md) | 인증·JWT·쿠키·RTR 정책 |
 | [docs/SWAGGER_GUIDE.md](docs/SWAGGER_GUIDE.md) | Swagger/OpenAPI 사용법 |
 | [docs/MOBILE_DEVELOPER_GUIDE.md](docs/MOBILE_DEVELOPER_GUIDE.md) | **모바일 앱 연동 가이드** |
+| [docs/MONITORING_AND_ALERTS.md](docs/MONITORING_AND_ALERTS.md) | 모니터링·알림·ASG·부하 테스트 |
 
 ---
 

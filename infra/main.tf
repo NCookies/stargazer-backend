@@ -101,13 +101,14 @@ resource "aws_security_group" "redis_sg" {
   }
 }
 
-# 5. [EC2] 웹 서버 인스턴스 (프리티어: t3.micro)
+# 5. [EC2] 웹 서버 인스턴스 (프리티어: t2.micro)
 resource "aws_instance" "web_server" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
   key_name      = var.key_pair_name
 
   vpc_security_group_ids = [aws_security_group.web_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_cloudwatch.name
 
   tags = {
     Name = "Stargazer-API-Server"
