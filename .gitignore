@@ -79,3 +79,8 @@ infra/lambda/*.zip
 .terraformrc
 terraform.rc
 *.hcl
+
+# Rebase reword helper (one-time use)
+infra/reword-msg.ps1
+infra/reword-seq.ps1
+infra/msgs/
