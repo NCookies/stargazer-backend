@@ -2,7 +2,8 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <property name="LOG_PATH" value="/app/logs"/>
+    <!-- LOG_PATH: 환경변수/시스템 프로퍼티 있으면 사용, 없으면 로컬용 상대경로 폴백 (bootRun / 컨테이너 공통) -->
+    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
     <property name="LOG_FILE" value="${LOG_PATH}/application.log"/>
 
     <!-- 콘솔 (docker logs, 로컬 실행) -->

@@ -70,6 +70,7 @@ jobs:
                         --name stargazer-app \
                         -p 8080:8080 \
                         -v /home/ubuntu/app-logs:/app/logs \
+                        -e LOG_PATH=/app/logs \
                         -e RDS_ENDPOINT=${{ secrets.RDS_ENDPOINT }} \
                         -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
                         -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
