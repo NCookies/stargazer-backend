@@ -109,6 +109,13 @@ if they appear as untracked local files.
 
 - All chat responses and git commit messages should be written in Korean, using Conventional Commits
   (`feat:`, `fix:`, `refactor:`, `docs:`, etc. — see `.cursorrules`).
+- **Never run `git commit` — the user commits everything themselves.** This is deliberate: delegating commits
+  cost the user their own understanding of the codebase, so the commit step is where they read the diff.
+  Instead of committing, propose a commit plan: which files go in which commit, why they are grouped that way,
+  and the Korean Conventional Commits message for each. Include a short plain-language summary of what actually
+  changed in each commit so the user can review the diff without re-deriving it. The same applies to
+  `git push`, `gh pr create`, and anything else that publishes work — propose, don't execute.
+  Staging (`git add`) also waits for the user unless they ask otherwise.
 - **Domain-science values require a citation.** Any numeric threshold, coefficient, or classification table derived
   from astronomy/photometry domain knowledge (e.g. Bortle class boundaries, VIIRS radiance→Bortle mapping, scoring
   deduction weights such as `(Bortle-1)*6.25` or the moon-brightness `×30` factor, twilight altitude cutoffs) must
